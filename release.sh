@@ -15,14 +15,11 @@ if [ "${MODEL}" = "" ]; then
 	echo "Warnning: failed to get machine id."
 	echo "ex)./release.sh model_name"
 	echo "ex)--------------------------------------------------"
-	echo "ex)./release.sh	coreprimeve3g"
-	echo "ex)./release.sh	grandprimeve3g"
-	echo "ex)./release.sh	z3lte"
-	echo "ex)./release.sh	z3"
+	echo "ex)./release.sh	tm1"
 	exit
 fi
 
-if [ ${MODEL} = "coreprimeve3g" -o ${MODEL} = "z3" ]; then
+if [ ${MODEL} = "coreprimeve3g" -o ${MODEL} = "tm1" ]; then
 	MODULE=1
 else
 	MODULE=0
