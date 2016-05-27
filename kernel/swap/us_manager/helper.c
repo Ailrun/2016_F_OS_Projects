@@ -153,8 +153,8 @@ static unsigned long cb_check_and_install(void *data);
 
 static int ctx_task_pre_handler(struct kprobe *p, struct pt_regs *regs)
 {
+	int ret;
 	struct sspt_proc *proc;
-	unsigned long page_addr;
 	struct task_struct *task = current;
 
 	if (is_kthread(task) || check_task_on_filters(task) == 0)
@@ -164,9 +164,11 @@ static int ctx_task_pre_handler(struct kprobe *p, struct pt_regs *regs)
 	if (proc && proc->first_install)
 		return 0;
 
-	page_addr = 0;
+	ret = set_kjump_cb(regs, cb_check_and_install, NULL, 0);
+	if (ret < 0)
+		pr_err("ctx_task_pre_handler: ret=%d\n", ret);
 
-	return set_kjump_cb(regs, cb_check_and_install, NULL, 0);
+	return 0;
 }
 
 static struct kprobe ctx_task_kprobe = {
@@ -264,7 +266,7 @@ static void rm_uprobes_child(struct kretprobe_instance *ri,
 	};
 
 	sspt_proc_write_lock();
-	proc = sspt_proc_get_by_task(current);
+	proc = sspt_proc_get_by_task_no_lock(current);
 	if (proc) {
 		sspt_proc_on_each_ip(proc, func_uinst_creare, (void *)&cdata.head);
 		urinst_info_get_current_hlist(&cdata.rhead, false);
@@ -423,7 +425,7 @@ static unsigned long mr_cb(void *data)
 		/* if the thread is killed we need to discard pending
 		 * uretprobe instances which have not triggered yet */
 		sspt_proc_write_lock();
-		proc = sspt_proc_get_by_task(task);
+		proc = sspt_proc_get_by_task_no_lock(task);
 		if (proc) {
 			urinst_info_get_current_hlist(&head, true);
 		}
@@ -560,7 +562,7 @@ static void remove_unmap_probes(struct task_struct *task,
 
 	sspt_proc_write_lock();
 
-	proc = sspt_proc_get_by_task(task);
+	proc = sspt_proc_get_by_task_no_lock(task);
 	if (proc)
 		__remove_unmap_probes(proc, umd);
 
