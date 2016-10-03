@@ -1,0 +1,1 @@
+OBJ-Y := ptree.o

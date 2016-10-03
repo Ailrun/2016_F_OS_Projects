@@ -99,3 +99,6 @@ sprd_nand_param.h
 
 #unify wlan driver
 sprdwl
+
+#emacs temp file
+*~
