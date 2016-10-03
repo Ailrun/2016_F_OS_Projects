@@ -1,6 +1,6 @@
 #ifndef _LINUX_PRINFO_H
 #define _LINUX_PRINFO_H
-#include <linux/kernel.h>
+#include <unistd.h>
 
 struct prinfo {
 	long state;             /* current state of process */
@@ -10,7 +10,7 @@ struct prinfo {
 	pid_t next_sibling_pid; /* pid of younger sibling */
 	long uid;               /* user id of process owner */
 	char comm[64];          /* name of program executed */
-}
+};
 
 #endif /*_LINUX_PRINFO_H*/
 
