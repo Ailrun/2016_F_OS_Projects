@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <linux/prinfo.h>
 
 int main(void)
 {
