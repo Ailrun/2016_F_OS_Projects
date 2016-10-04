@@ -8,6 +8,7 @@
 
 static int walk_process_tree(struct prinfo *buf, int *nr);
 static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task);
+static int copy_preorder(struct prinfo *buf, struct task_struct *cur, int n, int *result);
 
 asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 {
@@ -39,28 +40,38 @@ error:
 */
 static int walk_process_tree(struct prinfo *buf, int *nr)
 {
-	struct task_struct *task = NULL;
-	int i = 0;
+	int result = 0;
+	struct task_struct *curr = &init_task;
 
 	read_lock(&tasklist_lock);
 
-	for_each_process(task) {
-		if (i >= *nr) {
-			printk(KERN_EMERG "[OS_SNU_16] task list exceeds buffer\n");
-			break;
-		}
-		if (task == NULL) {
-			printk(KERN_EMERG "[OS_SNU_16] task is NULL\n");
-			break;
-		}
-		printk(KERN_EMERG "[OS_SNU_16] %d\n", task->pid);
-		copy_to_prinfo_from_task(buf+i, task);
-		i++;
-	}
+        copy_preorder(buf, curr, *nr, &result);
+	*nr = result;
 
 	read_unlock(&tasklist_lock);
 
 	return 0;
+}
+
+static int copy_preorder(struct prinfo *buf, struct task_struct *curr, int n, int *result)
+{
+	int child_result;
+	struct task_struct *child;
+
+	*result = 0;
+
+	if (n > 0) {
+		copy_to_prinfo_from_task(buf, curr);
+		(*result)++;
+
+		list_for_each_entry(child, &(curr->children), sibling) {
+		        copy_preorder(buf+*result, child, n-*result, &child_result);
+			*result += child_result;
+
+		}
+	}
+
+	return result;
 }
 
 static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task)
@@ -69,12 +80,17 @@ static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task)
 	pr->pid = task->pid;
 	pr->uid = task->real_cred->uid;
 	pr->parent_pid = task->real_parent->pid;
-	if(!list_empty(&task->children)) {
+
+	if (!list_empty(&task->children))
 		pr->first_child_pid = list_first_entry(&task->children, struct task_struct, sibling)->pid;
-	} else { pr->first_child_pid = -1; }
-	if(!list_is_last(&task->sibling, &task->real_parent->children)) {
+	else
+		pr->first_child_pid = -1;
+
+	if (!list_is_last(&task->sibling, &task->real_parent->children))
 		pr->next_sibling_pid = list_first_entry(&task->sibling, struct task_struct, sibling)->pid;
-	} else { pr->next_sibling_pid = -1; }
+	else
+		pr->next_sibling_pid = -1;
+
 	strncpy(pr->comm, task->comm, PRINFO_COMM_LENGTH);
 	return 0;
 }
