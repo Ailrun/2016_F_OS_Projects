@@ -7,14 +7,16 @@
 #include <linux/prinfo.h>
 
 #define BUFF_LEN 20
-
+#define nullnumber -1
+int pindex = 0;
+void print_ptree(struct prinfo *, int);
 int main(void)
 {
 	struct prinfo buff[BUFF_LEN];
 	int length = BUFF_LEN;
 	long res = syscall(384, buff, &length);
 
-	if (res == 0) {
+	/*if (res == 0) {
 		printf("%20s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n",
 		       "comm", "pid", "state",
 		       "Ppid",
@@ -31,7 +33,23 @@ int main(void)
 			       buff[i].uid);
 		}
 	}
-
+    */
+	print_ptree(buff, 0);
 	printf("Res: %ld\nerror: %s\n", res, strerror(errno));
 	return 0;
+}
+
+void print_ptree(struct prinfo *buff, int step)
+{
+	if(pindex >= BUFF_LEN) return;
+	int i;
+	struct prinfo p = buff[pindex];
+    for(i=0;i<step;++i) { printf("\t"); }
+	printf("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state,
+			p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid);
+	++pindex;
+	if(p.first_child_pid != nullnumber)
+		print_ptree(buff, step+1);
+	if(p.next_sibling_pid != nullnumber)
+		print_ptree(buff, step);
 }
