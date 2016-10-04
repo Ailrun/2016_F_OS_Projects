@@ -77,6 +77,7 @@ struct sigaltstack;
 #include <linux/quota.h>
 #include <linux/key.h>
 #include <trace/syscall.h>
+#include <linux/prinfo.h>
 
 /*
  * __MAP - apply a macro to syscall arguments
@@ -848,5 +849,5 @@ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
 asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
 asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
 			    const char __user *uargs);
-asmlinkage long sys_ptree(void);
+asmlinkage long sys_ptree(struct prinfo __user *buf, int __user *nr);
 #endif
