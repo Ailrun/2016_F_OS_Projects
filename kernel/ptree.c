@@ -3,6 +3,7 @@
 #include <linux/sched.h>
 #include <linux/prinfo.h>
 
+static int walk_process_tree();
 asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 {
 	int success_entries;
