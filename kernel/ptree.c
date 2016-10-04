@@ -8,24 +8,24 @@
 static int walk_process_tree(struct prinfo *buf, int *nr);
 asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 {
-        int success_entries;
-        int errorint;
+	int success_entries;
+	int errorint;
 
-        if (buf == NULL || nr == NULL || *nr < 1) {
-                errorint = -EINVAL;
-                goto error;
-        }
+	if (buf == NULL || nr == NULL || *nr < 1) {
+		errorint = -EINVAL;
+		goto error;
+	}
 	
-        /* struct prinfo p; */
-        /* printk("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state, */
-        /* 	 p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid); */
-        printk("Hello World\n");
+	/* struct prinfo p; */
+	/* printk("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state, */
+	/*	 p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid); */
+	printk("Hello World\n");
 
-        success_entries = walk_process_tree(buf, nr);
+	success_entries = walk_process_tree(buf, nr);
 
-        return success_entries;
+	return success_entries;
 error:
-        return errorint;
+	return errorint;
 }
 
 
@@ -35,27 +35,27 @@ error:
   return the total number of entries on success(?)
 */
 static int walk_process_tree(struct prinfo *buf, int *nr) {
-        struct task_struct *task = NULL;
-        int i = 0;
+	struct task_struct *task = NULL;
+	int i = 0;
 
-        read_lock(&tasklist_lock);
+	read_lock(&tasklist_lock);
 
-        for_each_process(task) {
-                if (i >= *nr) {
-                        printk(KERN_EMERG "[OS_SNU] task list exceeds buffer\n");
-                        break;
-                }
-                if (task == NULL) {
-                        printk(KERN_EMERG "[OS_SNU] task is NULL\n");
-                        break;
-                }
-                printk(KERN_EMERG "[OS_SNU] %d\n", task->pid);
-                strncpy(buf[i].comm, task->comm, PRINFO_COMM_LENGTH);
-                buf[i].pid = task->pid;
-                i++;
-        }
+	for_each_process(task) {
+		if (i >= *nr) {
+			printk(KERN_EMERG "[OS_SNU] task list exceeds buffer\n");
+			break;
+		}
+		if (task == NULL) {
+			printk(KERN_EMERG "[OS_SNU] task is NULL\n");
+			break;
+		}
+		printk(KERN_EMERG "[OS_SNU] %d\n", task->pid);
+		strncpy(buf[i].comm, task->comm, PRINFO_COMM_LENGTH);
+		buf[i].pid = task->pid;
+		i++;
+	}
 
-        read_unlock(&tasklist_lock);
+	read_unlock(&tasklist_lock);
 
-        return 0;	
+	return 0;	
 }
