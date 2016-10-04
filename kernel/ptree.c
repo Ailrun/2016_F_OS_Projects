@@ -69,8 +69,12 @@ static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task)
 	pr->pid = task->pid;
 	pr->uid = task->real_cred->uid;
 	pr->parent_pid = task->real_parent->pid;
-	pr->first_child_pid = list_first_entry(&task->children, struct task_struct, sibling)->pid;
-	pr->next_sibling_pid = list_first_entry(&task->sibling, struct task_struct, sibling)->pid;
+	if(!list_empty(&task->children)) {
+		pr->first_child_pid = list_first_entry(&task->children, struct task_struct, sibling)->pid;
+	} else { pr->first_child_pid = -1; }
+	if(!list_is_last(&task->sibling, &task->real_parent->children)) {
+		pr->next_sibling_pid = list_first_entry(&task->sibling, struct task_struct, sibling)->pid;
+	} else { pr->next_sibling_pid = -1; }
 	strncpy(pr->comm, task->comm, PRINFO_COMM_LENGTH);
 	return 0;
 }
