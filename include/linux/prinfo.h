@@ -1,6 +1,6 @@
 #ifndef _LINUX_PRINFO_H
 #define _LINUX_PRINFO_H
-#include <unistd.h>
+#include <linux/unistd.h>
 
 struct prinfo {
 	long state;             /* current state of process */
