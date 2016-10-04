@@ -6,23 +6,34 @@
 
 #include <linux/prinfo.h>
 
+#define PTREE_PAGE_SIZE 4096
+
 static int walk_process_tree(struct prinfo *buf, int *nr);
 static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task);
 static int copy_preorder(struct prinfo *buf, struct task_struct *cur, int n, int *result);
 
-asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
+static struct prinfo *ptree_buff;
+static struct mutex ptree_lock;
+
+SYSCALL_DEFINE2(ptree, struct prinfo __user *, buf, int *, nr)
 {
 	int success_entries;
 	int errorint;
+
+	if (!ptree_buff) {
+		ptree_buff = (prinfo *) kmalloc(PTREE_PAGE_SIZE, GFP_KERNEL);
+		if (!ptree_buff) {
+			errorint = -ENOMEM;
+			goto error;
+		}
+		mutex_init(&ptree_mutex);
+	}
 
 	if (buf == NULL || nr == NULL || *nr < 1) {
 		errorint = -EINVAL;
 		goto error;
 	}
 
-	/* struct prinfo p; */
-	/* printk("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state, */
-	/*	 p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid); */
 	printk(KERN_EMERG "[OS_SNU_16] Hello World\n");
 
 	success_entries = walk_process_tree(buf, nr);
