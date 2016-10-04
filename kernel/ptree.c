@@ -3,10 +3,36 @@
 #include <linux/sched.h>
 #include <linux/prinfo.h>
 
-asmlinkage long sys_ptree(void)
+asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 {
+	int success_entries;	
+	
 	struct prinfo p;
-	printk("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state, p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid);
+	printk("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state,
+		 p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid);
 	printk("Hello World\n");
-	return 0;
+
+	success_entries = walk_process_tree();
+
+	return success_entries;
+}
+
+
+/*
+ TODO traverse the process tree data structures in pre-ordering order
+ and copy process info into 'buf'
+ return the total number of entries on success(?)
+*/
+static int walk_process_tree() {
+	struct task_struct *task = get_current();
+
+	read_lock(&tasklist_lock);
+
+	for_each_process(task) {
+	
+	}
+
+	read_unlock(&tasklist_lock);
+
+	return 0;	
 }
