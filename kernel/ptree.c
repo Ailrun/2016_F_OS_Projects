@@ -3,13 +3,19 @@
 #include <linux/sched.h>
 #include <linux/list.h>
 #include <linux/string.h>
-
 #include <linux/prinfo.h>
 
 static int walk_process_tree(struct prinfo *buf, int *nr);
-static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task);
-static int copy_preorder(struct prinfo *buf, struct task_struct *cur, int n, int *result);
+static int copy_to_prinfo_from_task(struct prinfo *pr, 
+					struct task_struct *task);
+static int copy_in_preorder(struct prinfo *buf, struct task_struct *cur, 
+					int n, int *result);
 
+/*
+  traverse the process tree data structures in pre-order
+  and copy process info into 'buf'
+  return the total number of entries on success
+*/
 asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 {
 	int success_entries;
@@ -20,9 +26,6 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 		goto error;
 	}
 
-	/* struct prinfo p; */
-	/* printk("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state, */
-	/*	 p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid); */
 	printk(KERN_EMERG "[OS_SNU_16] Hello World\n");
 
 	success_entries = walk_process_tree(buf, nr);
@@ -32,12 +35,6 @@ error:
 	return errorint;
 }
 
-
-/*
-  TODO traverse the process tree data structures in pre-ordering order
-  and copy process info into 'buf'
-  return the total number of entries on success(?)
-*/
 static int walk_process_tree(struct prinfo *buf, int *nr)
 {
 	int result = 0;
@@ -50,10 +47,11 @@ static int walk_process_tree(struct prinfo *buf, int *nr)
 
 	read_unlock(&tasklist_lock);
 
-	return 0;
+	return result;
 }
 
-static int copy_preorder(struct prinfo *buf, struct task_struct *curr, int n, int *result)
+static int copy_in_preorder(struct prinfo *buf, struct task_struct *curr, 
+						int n, int *result)
 {
 	int child_result;
 	struct task_struct *child;
@@ -65,7 +63,8 @@ static int copy_preorder(struct prinfo *buf, struct task_struct *curr, int n, in
 		(*result)++;
 
 		list_for_each_entry(child, &(curr->children), sibling) {
-		        copy_preorder(buf+*result, child, n-*result, &child_result);
+		        copy_preorder(buf+*result, child, n-*result, 
+							&child_result);
 			*result += child_result;
 
 		}
@@ -74,7 +73,8 @@ static int copy_preorder(struct prinfo *buf, struct task_struct *curr, int n, in
 	return result;
 }
 
-static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task)
+static int copy_to_prinfo_from_task(struct prinfo *pr, 
+					struct task_struct *task)
 {
 	pr->state = task->state;
 	pr->pid = task->pid;
@@ -82,12 +82,14 @@ static int copy_to_prinfo_from_task(struct prinfo *pr, struct task_struct *task)
 	pr->parent_pid = task->real_parent->pid;
 
 	if (!list_empty(&task->children))
-		pr->first_child_pid = list_first_entry(&task->children, struct task_struct, sibling)->pid;
+		pr->first_child_pid = list_first_entry(&task->children, 
+					struct task_struct, sibling)->pid;
 	else
 		pr->first_child_pid = -1;
 
 	if (!list_is_last(&task->sibling, &task->real_parent->children))
-		pr->next_sibling_pid = list_first_entry(&task->sibling, struct task_struct, sibling)->pid;
+		pr->next_sibling_pid = list_first_entry(&task->sibling, 
+					struct task_struct, sibling)->pid;
 	else
 		pr->next_sibling_pid = -1;
 
