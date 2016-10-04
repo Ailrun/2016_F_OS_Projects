@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -7,8 +8,12 @@
 
 int main(void)
 {
-	long res = syscall(384);
-	printf("Res: %ld\nerror: %s\n", res, strerror(errno));
-
-	return 0;
+        struct prinfo buff[20];
+        int length = 20;
+		long res = syscall(384, buff, &length);
+        for (int i = 0; i < 20; i ++) {
+                printf("Comm: %s\tPid: %d\n", buff[i].comm, buff[i].pid);
+        }
+		printf("Res: %ld\nerror: %s\n", res, strerror(errno));
+		return 0;
 }
