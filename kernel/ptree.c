@@ -5,7 +5,13 @@
 
 asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 {
-	int success_entries;	
+	int success_entries;
+	int errorint;
+
+	if (buf == NULL || nr == NULL) {
+		errorint = -EINVAL;
+		goto error;
+	}
 	
 	struct prinfo p;
 	printk("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state,
@@ -15,6 +21,8 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr)
 	success_entries = walk_process_tree();
 
 	return success_entries;
+error:
+	return errorint;
 }
 
 
