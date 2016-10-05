@@ -13,22 +13,27 @@ int pindex;
 
 static void print_ptree(struct prinfo *buff, int step, int *length);
 
-int main(void)
+int main(int argc, char **argv)
 {
 	struct prinfo *buff;
 	int length;
 	int err;
 
-	buff = malloc(BUFF_LEN * sizeof(struct prinfo));
-	length = BUFF_LEN;
+	if (argc == 2) {
+		length = atoi(argv[1]);
+		buff = malloc(length * sizeof(struct prinfo));
 
-	err = syscall(384, buff, &length);
-	if (err == -EINVAL || err == -EFAULT)
-		return 1;
+		err = syscall(384, buff, &length);
+		if (err == -EINVAL || err == -EFAULT)
+			return 1;
 
-	print_ptree(buff, 0, &length);
+		print_ptree(buff, 0, &length);
 
-	return 0;
+		return 0;
+	} else {
+		printf("Usage: ./test <buffer length>\n");
+		exit(1);
+	}
 }
 
 void print_ptree(struct prinfo *buff, int step, int *length)
