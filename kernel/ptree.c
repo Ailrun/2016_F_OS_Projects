@@ -9,7 +9,7 @@
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
-#define PTREE_PAGE_SIZE 4096
+#define PTREE_PAGE_SIZE 4096 * 16
 
 static int walk_process_tree(int *total);
 static int copy_in_preorder(struct task_struct *cur, int *total);
@@ -131,12 +131,12 @@ static int copy_to_prinfo_from_task(struct prinfo *pr,
 		pr->first_child_pid = list_first_entry(&task->children, 
 					struct task_struct, sibling)->pid;
 	else
-		pr->first_child_pid = -1;
+		pr->first_child_pid = 0;
 	if (!list_is_last(&task->sibling, &task->real_parent->children))
 		pr->next_sibling_pid = list_first_entry(&task->sibling, 
 					struct task_struct, sibling)->pid;
 	else
-		pr->next_sibling_pid = -1;
+		pr->next_sibling_pid = 0;
 	strncpy(pr->comm, task->comm, PRINFO_COMM_LENGTH);
 
 
