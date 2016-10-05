@@ -22,7 +22,9 @@ $ cd <your kernel path>/test
 ```
 
 Makefile 두 번째 줄을 다음과 같이 변경한다.<br/>
-GCCROOT=<\extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin
+```
+GCCROOT=<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin
+```
 ```
 $ make
 ```
