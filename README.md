@@ -104,74 +104,74 @@ kthreadd,2,1,0,3,0,0
 
 2. Start the mobile camera (or any other apps are fine) in the emulator, and re-run your test program. How many processes are started? What is/are the parent process(es) of the new process(es)? Close the browser (press the "Home" button). How many processes were destroyed? Discuss your findings.
 
-Before run camera:
-```
-.
-.
-.
-launchpad-proce,1020,1,1,1033,1023,0
-	launchpad-loade,1033,1,1020,0,1034,5000
-	launchpad-loade,1034,1,1020,0,1035,5000
-	launchpad-loade,1035,1,1020,0,0,5000
-.
-.
-.
-kworker/1:3,730,1,2,0,839,0
-kworker/3:3,839,1,2,0,1624,0
-kworker/u8:2,1624,1,2,0,1738,0
-kworker/0:0,1738,1,2,0,1789,0
-kworker/u8:1,1789,1,2,0,1867,0
-kworker/0:3,1867,1,2,0,2038,0
-kworker/u8:3,2038,1,2,0,0,0
+   Before run camera:
+	```
+	.
+	.
+	.
+	launchpad-proce,1020,1,1,1033,1023,0
+		launchpad-loade,1033,1,1020,0,1034,5000
+		launchpad-loade,1034,1,1020,0,1035,5000
+		launchpad-loade,1035,1,1020,0,0,5000
+	.
+	.
+	.
+	kworker/1:3,730,1,2,0,839,0
+	kworker/3:3,839,1,2,0,1624,0
+	kworker/u8:2,1624,1,2,0,1738,0
+	kworker/0:0,1738,1,2,0,1789,0
+	kworker/u8:1,1789,1,2,0,1867,0
+	kworker/0:3,1867,1,2,0,2038,0
+	kworker/u8:3,2038,1,2,0,0,0
 
-```
-After run camera:
-```
-.
-.
-.
-launchpad-proce,1020,1,1,1033,1023,0
-	launchpad-loade,1033,1,1020,0,1034,5000
-	launchpad-loade,1034,1,1020,0,1035,5000
-	camera,1035,1,1020,0,1694,5000
-	launchpad-loade,1694,1,1020,0,0,5000
-.
-.
-.
-kworker/1:3,730,1,2,0,839,0
-kworker/3:3,839,1,2,0,1624,0
-kworker/u8:2,1624,1,2,0,1634,0
-kworker/0:2,1634,1,2,0,1738,0
-kworker/0:0,1738,1,2,0,1789,0
-kworker/u8:1,1789,1,2,0,1866,0
-kworker/0:1,1866,1,2,0,1867,0
-kworker/0:3,1867,1,2,0,1868,0
-kworker/0:4,1868,1,2,0,1893,0
-dcam_flash_thre,1893,1,2,0,1894,0
-img_zoom_thread,1894,1,2,0,1929,0
-ipp_cmd_1,1929,1,2,0,1931,0
-kworker/u8:3,1931,1,2,0,0,0
-```
-After close camera:
-```
-launchpad-proce,1020,1,1,1034,1023,0
-	launchpad-loade,1034,1,1020,0,1694,5000
-	launchpad-loade,1694,1,1020,0,1742,5000
-	launchpad-loade,1742,1,1020,0,0,5000
-.
-.
-.
-kworker/1:3,730,1,2,0,839,0
-kworker/3:3,839,1,2,0,1624,0
-kworker/u8:2,1624,1,2,0,1634,0
-kworker/0:2,1634,1,2,0,1738,0
-kworker/0:0,1738,1,2,0,1789,0
-kworker/u8:1,1789,1,2,0,1866,0
-kworker/0:1,1866,1,2,0,1867,0
-kworker/0:3,1867,0,2,0,1868,0
-kworker/0:4,1868,1,2,0,1931,0
-kworker/u8:3,1931,1,2,0,0,0
-```
+	```
+   After run camera:
+	```
+	.
+	.
+	.
+	launchpad-proce,1020,1,1,1033,1023,0
+		launchpad-loade,1033,1,1020,0,1034,5000
+		launchpad-loade,1034,1,1020,0,1035,5000
+		camera,1035,1,1020,0,1694,5000
+		launchpad-loade,1694,1,1020,0,0,5000
+	.
+	.
+	.
+	kworker/1:3,730,1,2,0,839,0
+	kworker/3:3,839,1,2,0,1624,0
+	kworker/u8:2,1624,1,2,0,1634,0
+	kworker/0:2,1634,1,2,0,1738,0
+	kworker/0:0,1738,1,2,0,1789,0
+	kworker/u8:1,1789,1,2,0,1866,0
+	kworker/0:1,1866,1,2,0,1867,0
+	kworker/0:3,1867,1,2,0,1868,0
+	kworker/0:4,1868,1,2,0,1893,0
+	dcam_flash_thre,1893,1,2,0,1894,0
+	img_zoom_thread,1894,1,2,0,1929,0
+	ipp_cmd_1,1929,1,2,0,1931,0
+	kworker/u8:3,1931,1,2,0,0,0
+	```
+   After close camera:
+	```
+	launchpad-proce,1020,1,1,1034,1023,0
+		launchpad-loade,1034,1,1020,0,1694,5000
+		launchpad-loade,1694,1,1020,0,1742,5000
+		launchpad-loade,1742,1,1020,0,0,5000
+	.
+	.
+	.
+	kworker/1:3,730,1,2,0,839,0
+	kworker/3:3,839,1,2,0,1624,0
+	kworker/u8:2,1624,1,2,0,1634,0
+	kworker/0:2,1634,1,2,0,1738,0
+	kworker/0:0,1738,1,2,0,1789,0
+	kworker/u8:1,1789,1,2,0,1866,0
+	kworker/0:1,1866,1,2,0,1867,0
+	kworker/0:3,1867,0,2,0,1868,0
+	kworker/0:4,1868,1,2,0,1931,0
+	kworker/u8:3,1931,1,2,0,0,0
+	```
     7 processes are started upon camera running. The two parent processes of these new started ones are: 'launchpad-proce' and 'kthreadd'. When we close the camera application, 4 processes are destroyed.
 
 3. In 4.2, you may notice that there are launchpad and launchpad-loader. Investigate these processes.
