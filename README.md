@@ -99,9 +99,11 @@ kthreadd,2,1,0,3,0,0
 ## Investigate the Tizen process tree
 
 1. Run your test program several times. Which fields in the prinfo structure change? Which ones do not? Discuss why different fields might change with different frequency.
+
    Upon several testings with no applications run, `name` field, `parent_pid` field, `first_child_pid` field, and `uid` field didn't change, but the others changed. The reason why fields change is simply because processes keep changing. Some process needs to be died after its task, some needs to start, and some proceeds and gets into a new state. These transitions make the fields in the prinfo structure change.
 
 2. Start the mobile camera (or any other apps are fine) in the emulator, and re-run your test program. How many processes are started? What is/are the parent process(es) of the new process(es)? Close the browser (press the "Home" button). How many processes were destroyed? Discuss your findings.
+
 Before run camera:
 ```
 .
@@ -170,11 +172,13 @@ kworker/0:3,1867,0,2,0,1868,0
 kworker/0:4,1868,1,2,0,1931,0
 kworker/u8:3,1931,1,2,0,0,0
 ```
-   7 processes are started upon camera running. The two parent processes of these new started ones are: 'launchpad-proce' and 'kthreadd'. When we close the camera application, 4 processes are destroyed.
+    7 processes are started upon camera running. The two parent processes of these new started ones are: 'launchpad-proce' and 'kthreadd'. When we close the camera application, 4 processes are destroyed.
 
 3. In 4.2, you may notice that there are launchpad and launchpad-loader. Investigate these processes.
 
   1. Focusing on pids of launchpad, launchpad-loader, and applications, try 4.2 again. Explain changes of the process names or pids.
+
      The names remained the same, but pid of the last launchpad-loader was changed. `camera` got the former pid of the last launchpad-loader. 
   2. Explain what launchpad and launchpad-loader do. And Discuss the reason Tizen use them.
+
      Launchpad is a parent process of all applications and handles launch request from amd(application management daemon). It also manages launchpad-loaders, which are pre-initialized processes for applications. Using launchpad and launchpad-loader makes lauching applications fast, because applications can use pre-initialized parts from pre-initialized launchpad-loader process. This is why Tizen uses them. (referred to: [http://www.slideshare.net/silverlee2/tizen-application-inside-out])
