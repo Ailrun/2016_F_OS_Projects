@@ -6,8 +6,8 @@
 #include <string.h>
 #include <linux/prinfo.h>
 
-#define BUFF_LEN 200
-#define nullnumber -1
+#define BUFF_LEN 800
+#define nullnumber 0
 
 int pindex = 0;
 
@@ -23,7 +23,6 @@ int main(void)
 	length = BUFF_LEN;
 
 	err = syscall(384, buff, &length);
-	printf("length : %d\n", length);
 	if (err == -EINVAL || err == -EFAULT)
 		return 1;
 
