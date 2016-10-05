@@ -91,7 +91,90 @@ kthreadd,2,1,0,3,0,0
 
 
 ## Lessons Learned
+
 - 시스템콜의 기본 구조에 대해 이해하였다
 - 더블링크드리스트 프로세스 트리 구조를 배웠다
 
 
+## Investigate the Tizen process tree
+
+1. Run your test program several times. Which fields in the prinfo structure change? Which ones do not? Discuss why different fields might change with different frequency.
+   Upon several testings with no applications run, `name` field, `parent_pid` field, `first_child_pid` field, and `uid` field didn't change, but the others changed. The reason why fields change is simply because processes keep changing. Some process needs to be died after its task, some needs to start, and some proceeds and gets into a new state. These transitions make the fields in the prinfo structure change.
+
+2. Start the mobile camera (or any other apps are fine) in the emulator, and re-run your test program. How many processes are started? What is/are the parent process(es) of the new process(es)? Close the browser (press the "Home" button). How many processes were destroyed? Discuss your findings.
+Before run camera:
+```
+.
+.
+.
+launchpad-proce,1020,1,1,1033,1023,0
+	launchpad-loade,1033,1,1020,0,1034,5000
+	launchpad-loade,1034,1,1020,0,1035,5000
+	launchpad-loade,1035,1,1020,0,0,5000
+.
+.
+.
+kworker/1:3,730,1,2,0,839,0
+kworker/3:3,839,1,2,0,1624,0
+kworker/u8:2,1624,1,2,0,1738,0
+kworker/0:0,1738,1,2,0,1789,0
+kworker/u8:1,1789,1,2,0,1867,0
+kworker/0:3,1867,1,2,0,2038,0
+kworker/u8:3,2038,1,2,0,0,0
+
+```
+After run camera:
+```
+.
+.
+.
+launchpad-proce,1020,1,1,1033,1023,0
+	launchpad-loade,1033,1,1020,0,1034,5000
+	launchpad-loade,1034,1,1020,0,1035,5000
+	camera,1035,1,1020,0,1694,5000
+	launchpad-loade,1694,1,1020,0,0,5000
+.
+.
+.
+kworker/1:3,730,1,2,0,839,0
+kworker/3:3,839,1,2,0,1624,0
+kworker/u8:2,1624,1,2,0,1634,0
+kworker/0:2,1634,1,2,0,1738,0
+kworker/0:0,1738,1,2,0,1789,0
+kworker/u8:1,1789,1,2,0,1866,0
+kworker/0:1,1866,1,2,0,1867,0
+kworker/0:3,1867,1,2,0,1868,0
+kworker/0:4,1868,1,2,0,1893,0
+dcam_flash_thre,1893,1,2,0,1894,0
+img_zoom_thread,1894,1,2,0,1929,0
+ipp_cmd_1,1929,1,2,0,1931,0
+kworker/u8:3,1931,1,2,0,0,0
+```
+After close camera:
+```
+launchpad-proce,1020,1,1,1034,1023,0
+	launchpad-loade,1034,1,1020,0,1694,5000
+	launchpad-loade,1694,1,1020,0,1742,5000
+	launchpad-loade,1742,1,1020,0,0,5000
+.
+.
+.
+kworker/1:3,730,1,2,0,839,0
+kworker/3:3,839,1,2,0,1624,0
+kworker/u8:2,1624,1,2,0,1634,0
+kworker/0:2,1634,1,2,0,1738,0
+kworker/0:0,1738,1,2,0,1789,0
+kworker/u8:1,1789,1,2,0,1866,0
+kworker/0:1,1866,1,2,0,1867,0
+kworker/0:3,1867,0,2,0,1868,0
+kworker/0:4,1868,1,2,0,1931,0
+kworker/u8:3,1931,1,2,0,0,0
+```
+   7 processes are started upon camera running. The two parent processes of these new started ones are: 'launchpad-proce' and 'kthreadd'. When we close the camera application, 4 processes are destroyed.
+
+3. In 4.2, you may notice that there are launchpad and launchpad-loader. Investigate these processes.
+
+  1. Focusing on pids of launchpad, launchpad-loader, and applications, try 4.2 again. Explain changes of the process names or pids.
+     The names remained the same, but pid of the last launchpad-loader was changed. `camera` got the former pid of the last launchpad-loader. 
+  2. Explain what launchpad and launchpad-loader do. And Discuss the reason Tizen use them.
+     Launchpad is a parent process of all applications and handles launch request from amd(application management daemon). It also manages launchpad-loaders, which are pre-initialized processes for applications. Using launchpad and launchpad-loader makes lauching applications fast, because applications can use pre-initialized parts from pre-initialized launchpad-loader process. This is why Tizen uses them. (referred to: [http://www.slideshare.net/silverlee2/tizen-application-inside-out])
