@@ -1,12 +1,12 @@
 # OS SNU 16 - Proj1
-> <b>Team Member</b> 김희연 / 강수람 / 최윤영 / 장준영(Junyoung Clare Jang)
+> <b>Team Member</b> 김희연 / 강수람 / 최윤영 / 장준영 (Junyoung Clare Jang)
 
 ## How to Build/Run
 
 <b>1. How to Compile Kernel</b>
 
 ```
-$ cd <your kernel path>
+$ cd <this kernel path>
 $ export PATH="$PATH:<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin/"
 $ ./build.sh tizen_tm1 USR
 $ sudo ls
@@ -19,7 +19,7 @@ $ tar cf IMAGE.tar -C arch/arm/boot dzImage -C ../../../usr/tmp-mod modules.img
 <b>2. How to Compile Test Program</b>
 
 ```
-$ cd <your kernel path>/test
+$ cd <this kernel path>/test
 $ vi Makefile
 ```
 
@@ -46,7 +46,7 @@ $ sdb devices
 # Check your device as TM1
 $ sdb push test /home/developer/
 $ sdb shell
-$ /home/developer/test
+$ /home/developer/test <Buffer Length>
 ```
 
 
@@ -85,16 +85,16 @@ kthreadd,2,1,0,3,0,0
 
 - 입력값 buf와 nr이 NULL일 경우와 유저와 커널 사이 교환이 제대로 되지 않을 경우 각각 -EINVAL, -EFAULT 에러를 발생시키도록 한다.
 - 동적할당에 실패할 경우 -ENOMEM 에러를 발생시킨다.
-- 첫번째 자식과 형제를 우선시하는 트리 기반의 DFS를 구상한다. → `walk_process_tree(int *)`
-- 모든 성공 프로세스의 정보를 기록을 하고 → `copy_to_prinfo_from_task(struct prinfo *, struct task_struct *)`
-- 재귀적 방법을 사용하여 전위 순회(preorder)로 정렬한다 → `copy_in_preorder(struct task_struct *, int *)`
-
+- 첫번째 자식과 형제를 우선시하는 tree 기반의 DFS를 구상한다. → `walk_process_tree(int *)`
+- 모든 성공 process의 정보를 기록을 하고 → `copy_to_prinfo_from_task(struct prinfo *, struct task_struct *)`
+- 재귀적 방법을 사용하여 전위 순회 (preorder)로 정렬한다 → `copy_in_preorder(struct task_struct *, int *)`
+- swapper process (pid = 0) 는 Linux 상에서 실제로 swapper process로 동작하지 않으며 일반적으로 idle process이기 때문에, 출력하지 않았다.
 
 ## Lessons Learned
 
-- 시스템콜의 기본 구조에 대해 이해하였다
-- 더블링크드리스트 프로세스 트리 구조를 배웠다
-
+- System call의 기본 구조에 대해 이해하였다
+- Double linked list process tree 구조를 배웠다
+- Swapper process에 대해 배웠다.
 
 ## Investigate the Tizen process tree
 
@@ -181,4 +181,4 @@ kthreadd,2,1,0,3,0,0
      The names remained the same, but pid of the last launchpad-loader was changed. `camera` got the former pid of the last launchpad-loader. 
   2. Explain what launchpad and launchpad-loader do. And Discuss the reason Tizen use them.
 
-     Launchpad is a parent process of all applications and handles launch request from amd(application management daemon). It also manages launchpad-loaders, which are pre-initialized processes for applications. Using launchpad and launchpad-loader makes lauching applications fast, because applications can use pre-initialized parts from pre-initialized launchpad-loader process. This is why Tizen uses them. (referred to: [http://www.slideshare.net/silverlee2/tizen-application-inside-out])
+     Launchpad is a parent process of all applications and handles launch request from amd (application management daemon). It also manages launchpad-loaders, which are pre-initialized processes for applications. Using launchpad and launchpad-loader makes lauching applications fast, because applications can use pre-initialized parts from pre-initialized launchpad-loader process. This is why Tizen uses them. (referred to: [http://www.slideshare.net/silverlee2/tizen-application-inside-out])
