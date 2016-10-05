@@ -8,17 +8,24 @@
 
 #define BUFF_LEN 200
 #define nullnumber -1
+
 int pindex = 0;
 
-void print_ptree(struct prinfo *, int, int*);
+void print_ptree(struct prinfo *buff, int step, int *length);
+
 int main(void)
 {
 	struct prinfo *buff;
+	int length;
+	int err;
+
 	buff = (struct prinfo*)malloc(BUFF_LEN*sizeof(struct prinfo));
-	int length = BUFF_LEN;
-	int prnum = syscall(384, buff, &length);
+	length = BUFF_LEN;
+
+	err = syscall(384, buff, &length);
 	printf("length : %d\n", length);
-	if(prnum == -EINVAL || prnum == -EFAULT) return 1; 
+	if (err == -EINVAL || err == -EFAULT)
+		return 1;
 
 	print_ptree(buff, 0, &length);
 
@@ -27,15 +34,22 @@ int main(void)
 
 void print_ptree(struct prinfo *buff, int step, int* length)
 {
-	if(pindex >= *length || pindex >= BUFF_LEN) return;
 	int i;
-	struct prinfo p = buff[pindex];
-    for(i=0;i<step;++i) { printf("\t"); }
+	struct prinfo p;
+
+	if (pindex >= *length || pindex >= BUFF_LEN)
+		return;
+
+	p = buff[pindex];
+	for (i = 0; i < step; ++i)
+		printf("\t");
 	printf("%s,%d,%ld,%d,%d,%d,%d\n", p.comm, p.pid, p.state,
 			p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid);
+
 	++pindex;
-	if(p.first_child_pid != nullnumber)
+
+	if (p.first_child_pid != nullnumber)
 		print_ptree(buff, step+1, length);
-	if(p.next_sibling_pid != nullnumber)
+	if (p.next_sibling_pid != nullnumber)
 		print_ptree(buff, step, length);
 }
