@@ -13,6 +13,8 @@ obj-y     = fork.o exec_domain.o panic.o printk.o \
 	    async.o range.o groups.o lglock.o smpboot.o \
 	    rotation.o
 
+CFLAGS_rotation.o = -DDEBUG
+
 ifdef CONFIG_FUNCTION_TRACER
 # Do not trace debug files and internal ftrace files
 CFLAGS_REMOVE_lockdep.o = -pg
