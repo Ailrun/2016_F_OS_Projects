@@ -15,4 +15,4 @@ $(TAR): $(SRC)
 	@$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	@rm $(TAR)
+	@rm -f $(TAR)
