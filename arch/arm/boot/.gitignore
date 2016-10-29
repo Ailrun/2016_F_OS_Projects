@@ -4,3 +4,5 @@ xipImage
 bootpImage
 uImage
 *.dtb
+dzImage
+merged-dtb
