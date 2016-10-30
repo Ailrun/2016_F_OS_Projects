@@ -9,3 +9,4 @@ clean:
 	$(MAKE) -C rotd clean
 	$(MAKE) -C selector clean
 	$(MAKE) -C trial clean
+	@rm -f */*~
