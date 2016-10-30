@@ -35,6 +35,7 @@ static struct dev_rotation sys_dev_rotation;
 
 
 static int is_range_read_lockable(int low, int high);
+static int is_range_write_lockable(int low, int high);
 
 SYSCALL_DEFINE1(set_rotation, struct dev_rotation __user *, rot)
 {
@@ -137,6 +138,68 @@ SYSCALL_DEFINE1(rotlock_write, struct rotation_range __user *, rot)
 {
 	pr_debug("[OS_SNU_16] sys_rotlock_write start\n");
 
+
+	struct rotation_range r;
+
+	
+	if (copy_from_user(&r, rot, sizeof(*rot)))
+		return -1;
+
+	int low = r.rot.degree - r.degree_range;
+	int high = r.rot.degree + r.degree_range;
+
+	if (low < 0 || high > 360)
+		return -1;
+
+
+	int lockable;
+	DEFINE_WAIT(w);
+
+	int first = 1;
+
+	int d;
+
+	for (;;) {
+		mutex_lock(&rotarea_list_lock);
+
+		for (d = low; d <= high; d++) {
+			if (rotarea_list[d] == NULL)
+				INIT_ROTAREA(rotarea_list[d]);
+
+			if (first)
+				rotarea_list[d]->write_waiting++;
+
+			prepare_to_wait(&rotarea_list[d]->wq,
+					&w, TASK_INTERRUPTIBLE);
+
+		}
+
+		first = 0;
+
+		lockable = is_range_write_lockable(low, high);
+
+		if (lockable < 0) {
+			for (d = low; d <= high; d++) {
+				if (rotarea_list[d] == NULL)
+					INIT_ROTAREA(rotarea_list[d]);
+				rotarea_list[d]->write_ref++;
+				rotarea_list[d]->write_waiting--;
+			}
+
+			break;
+			
+		}
+
+
+		mutex_unlock(&rotarea_list_lock);
+		
+		schedule();
+	}
+
+	for (d = low; d <= high; d++)
+		finish_wait(&rotarea_list[d]->wq, &w);
+	mutex_unlock(&rotarea_list_lock);
+
 	pr_debug("[OS_SNU_16] sys_rotlock_write end\n");
 	return 0;
 }
@@ -166,6 +229,21 @@ int is_range_read_lockable(int low, int high)
 		if (rotarea_list[d] != NULL) {
 		        not_lockable |= rotarea_list[d]->write_ref;
 		        not_lockable |= rotarea_list[d]->write_waiting;
+		}
+	}
+	
+	return !not_lockable;
+}
+
+int is_range_write_lockable(int low, int high)
+{
+	int not_lockable = 0;
+	int d;
+
+	for (d = low; d <= high; d++) {
+		if (rotarea_list[d] != NULL) {
+		        not_lockable |= rotarea_list[d]->read_ref;
+		        not_lockable |= rotarea_list[d]->write_ref;
 		}
 	}
 	
