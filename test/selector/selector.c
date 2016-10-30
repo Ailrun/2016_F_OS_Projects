@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <sys/syscall.h>
 
 #include <linux/rotation.h>
@@ -50,7 +49,7 @@ void selector(int number)
 
 	fclose(file);
 
-	printf("%d\n", number);
+	printf("selector: %d\n", number);
 
 	syscall(SYSCALL_ROTUNLOCK_WRITE, &srrange);
 
