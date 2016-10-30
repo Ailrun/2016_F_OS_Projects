@@ -97,6 +97,7 @@ SYSCALL_DEFINE1(rotlock_read, struct rotation_range __user *, rot)
 	int d;
 
 	for (;;) {
+		pr_debug("[OS_SNU_16] in loop of sys_rotlock_read\n");
 		mutex_lock(&rotarea_list_lock);
 
 		for (d = low; d <= high; d++) {
@@ -108,7 +109,7 @@ SYSCALL_DEFINE1(rotlock_read, struct rotation_range __user *, rot)
 
 		lockable = is_range_read_lockable(low, high);
 
-		if (lockable < 0) {
+		if (lockable) {
 			for (d = low; d <= high; d++) {
 				if (rotarea_list[d] == NULL)
 					INIT_ROTAREA(rotarea_list[d]);
@@ -160,6 +161,7 @@ SYSCALL_DEFINE1(rotlock_write, struct rotation_range __user *, rot)
 	int d;
 
 	for (;;) {
+		pr_debug("[OS_SNU_16] in loop of sys_rotlock_write\n");
 		mutex_lock(&rotarea_list_lock);
 
 		for (d = low; d <= high; d++) {
@@ -178,7 +180,7 @@ SYSCALL_DEFINE1(rotlock_write, struct rotation_range __user *, rot)
 
 		lockable = is_range_write_lockable(low, high);
 
-		if (lockable < 0) {
+		if (lockable) {
 			for (d = low; d <= high; d++) {
 				if (rotarea_list[d] == NULL)
 					INIT_ROTAREA(rotarea_list[d]);
