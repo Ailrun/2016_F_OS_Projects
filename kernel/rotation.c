@@ -208,6 +208,47 @@ SYSCALL_DEFINE1(rotunlock_read, struct rotation_range __user *, rot)
 {
 	pr_debug("[OS_SNU_16] sys_rotunlock_read start\n");
 
+
+	struct rotation_range r;
+
+	
+	if (copy_from_user(&r, rot, sizeof(*rot)))
+		return -1;
+
+	int low = r.rot.degree - r.degree_range;
+	int high = r.rot.degree + r.degree_range;
+
+	if (low < 0 || high > 360)
+		return -1;
+
+
+	mutex_lock(&dev_rotation_lock);
+
+	int degree = sys_dev_rotation.degree;
+
+	mutex_unlock(&dev_rotation_lock);
+
+
+	mutex_lock(&rotarea_list_lock);
+
+	int d;
+	
+	for (d = low; d <= high; d++) {
+		rotarea_list[d]->read_ref--;
+
+		if (d == degree)
+			wake_up(&rotarea_list[d]->wq);
+
+		if (rotarea_list[d]->read_ref == 0 &&
+		    rotarea_list[d]->write_ref == 0 &&
+		    rotarea_list[d]->write_waiting == 0)
+			DEINIT_ROTAREA(rotarea_list[d]);
+
+	}
+
+	mutex_unlock(&rotarea_list_lock);
+
+
 	pr_debug("[OS_SNU_16] sys_rotunlock_read end\n");
 	return 0;
 }
