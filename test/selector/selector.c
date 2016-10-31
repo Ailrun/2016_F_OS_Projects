@@ -11,7 +11,7 @@
 
 #include <linux/rotation.h>
 
-void selector(int number);
+static void selector(int number);
 
 int main(int argc, char **argv)
 {
@@ -44,7 +44,7 @@ void selector(int number)
 	char buf[128];
 
 	syscall(SYSCALL_ROTLOCK_WRITE, &srrange);
-	
+
 	file = open(SELECTOR_FILE_NAME, O_WRONLY);
 
 	if (file < 0)

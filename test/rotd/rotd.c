@@ -7,11 +7,11 @@
 #include <string.h>
 #include <unistd.h>
 
-int notFinished = 1;
+int not_finished = 1;
 
 void term(int signum)
 {
-	notFinished = 0;
+	not_finished = 0;
 }
 
 void sensor()
@@ -22,10 +22,10 @@ void sensor()
 	action.sa_handler = term;
 	if (sigaction(SIGTERM, &action, NULL) == -1)
 		exit(-1);
-	
+
 	struct dev_rotation rotation;
 	rotation.degree = 0;
-	while (notFinished) {
+	while (not_finished) {
 		rotation.degree = (rotation.degree + 30) % 360;
 		syscall(SYSCALL_SET_ROTATION, &rotation);
 		sleep(2);

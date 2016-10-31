@@ -10,13 +10,12 @@
 
 #include <linux/rotation.h>
 
-void trial(void);
+static void trial(void);
 
 int main(void)
 {
-	while(1) {
+	while (1)
 		trial();
-	}
 
 	return 0;
 }
@@ -44,7 +43,7 @@ void trial(void)
 
 	for (prime = 2; number != 1;) {
 		if (number % prime == 0) {
-			exp ++;
+			exp++;
 			number /= prime;
 
 		} else if (exp != 0) {
