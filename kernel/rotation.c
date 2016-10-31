@@ -1,22 +1,137 @@
 #include <linux/syscalls.h>
+#include <linux/slab.h>
+#include <linux/wait.h>
+#include <linux/mutex.h>
+
 #include <linux/rotation.h>
 
-struct dev_rotation sys_dev_rotation;
+#define INIT_ROTAREA(rotareap)						\
+	do {								\
+		rotareap = kmalloc(sizeof(rotarea_t), GFP_KERNEL);	\
+		rotareap->read_ref = 0;					\
+		rotareap->write_ref = 0;				\
+		rotareap->write_waiting = 0;				\
+		init_waitqueue_head(&rotareap->wq);			\
+	} while(0)
+#define DEINIT_ROTAREA(rotareap)		\
+	do {					\
+		kfree(rotareap);		\
+		rotareap = NULL;		\
+	} while (0)
+
+struct __rotarea_t {
+	int read_ref;
+	int write_ref;
+	int write_waiting;
+	wait_queue_head_t wq;
+};
+
+typedef struct __rotarea_t rotarea_t;
+
+static DEFINE_MUTEX(rotarea_list_lock);
+static rotarea_t *(rotarea_list[361]) = {NULL, };
+
+static DEFINE_MUTEX(dev_rotation_lock);
+static struct dev_rotation sys_dev_rotation;
+
+
+static int is_range_read_lockable(int low, int high);
+static int is_range_write_lockable(int low, int high);
 
 SYSCALL_DEFINE1(set_rotation, struct dev_rotation __user *, rot)
 {
 	pr_debug("[OS_SNU_16] sys_set_rotation start\n");
-	
-	if (copy_from_user(&sys_dev_rotation, rot, sizeof(*rot)))
-		return -EFAULT;
 
-	pr_debug("[OS_SNU_16] sys_dev_rotation = %d\n", sys_dev_rotation.degree);
+
+	int degree;
+
+	
+	mutex_lock(&dev_rotation_lock);
+
+	if (copy_from_user(&sys_dev_rotation, rot, sizeof(*rot)))
+		return -1;
+
+	degree = sys_dev_rotation.degree;
+
+	mutex_unlock(&dev_rotation_lock);
+
+
+	mutex_lock(&rotarea_list_lock);
+
+	if (rotarea_list[degree] != NULL &&
+	    rotarea_list[degree]->read_ref == 0 &&
+	    rotarea_list[degree]->write_waiting == 0)
+		wake_up(&rotarea_list[degree]->wq);
+
+	mutex_unlock(&rotarea_list_lock);
+
+
+	pr_debug("[OS_SNU_16] sys_dev_rotation = %d\n", degree);
+
+	pr_debug("[OS_SNU_16] sys_set_rotation end\n");
 	return 0;
 }
 
 SYSCALL_DEFINE1(rotlock_read, struct rotation_range __user *, rot)
 {
 	pr_debug("[OS_SNU_16] sys_rotlock_read start\n");
+
+
+	struct rotation_range r;
+
+
+	if (copy_from_user(&r, rot, sizeof(*rot)))
+		return -1;
+
+
+	int low = r.rot.degree - r.degree_range;
+	int high = r.rot.degree + r.degree_range;
+
+	if (low < 0 || high > 360)
+		return -1;
+
+
+
+	int lockable;
+	DEFINE_WAIT(w);
+
+	int d;
+
+	for (;;) {
+		pr_debug("[OS_SNU_16] in loop of sys_rotlock_read\n");
+		mutex_lock(&rotarea_list_lock);
+
+		for (d = low; d <= high; d++) {
+			if (rotarea_list[d] == NULL)
+				INIT_ROTAREA(rotarea_list[d]);
+			prepare_to_wait(&rotarea_list[d]->wq,
+					&w, TASK_INTERRUPTIBLE);
+		}
+
+		lockable = is_range_read_lockable(low, high);
+
+		if (lockable) {
+			for (d = low; d <= high; d++) {
+				if (rotarea_list[d] == NULL)
+					INIT_ROTAREA(rotarea_list[d]);
+				rotarea_list[d]->read_ref++;
+			}
+
+			break;
+			
+		}
+
+		mutex_unlock(&rotarea_list_lock);
+		
+		schedule();
+	}
+
+	for (d = low; d <= high; d++)
+		finish_wait(&rotarea_list[d]->wq, &w);
+	mutex_unlock(&rotarea_list_lock);
+
+
+	pr_debug("[OS_SNU_16] sys_rotlock_read end\n");
 
 	return 0;
 }
@@ -25,6 +140,72 @@ SYSCALL_DEFINE1(rotlock_write, struct rotation_range __user *, rot)
 {
 	pr_debug("[OS_SNU_16] sys_rotlock_write start\n");
 
+
+	struct rotation_range r;
+
+	
+	if (copy_from_user(&r, rot, sizeof(*rot)))
+		return -1;
+
+	int low = r.rot.degree - r.degree_range;
+	int high = r.rot.degree + r.degree_range;
+
+	if (low < 0 || high > 360)
+		return -1;
+
+
+	int lockable;
+	DEFINE_WAIT(w);
+
+	int first = 1;
+
+	int d;
+
+	for (;;) {
+		pr_debug("[OS_SNU_16] in loop of sys_rotlock_write\n");
+		mutex_lock(&rotarea_list_lock);
+
+		for (d = low; d <= high; d++) {
+			if (rotarea_list[d] == NULL)
+				INIT_ROTAREA(rotarea_list[d]);
+
+			if (first)
+				rotarea_list[d]->write_waiting++;
+
+			prepare_to_wait(&rotarea_list[d]->wq,
+					&w, TASK_INTERRUPTIBLE);
+
+		}
+
+		first = 0;
+
+		lockable = is_range_write_lockable(low, high);
+
+		pr_debug("[OS_SNU_16] sys_rotlock_write lockable: %d\n", lockable);
+
+		if (lockable) {
+			for (d = low; d <= high; d++) {
+				if (rotarea_list[d] == NULL)
+					INIT_ROTAREA(rotarea_list[d]);
+				rotarea_list[d]->write_ref++;
+				rotarea_list[d]->write_waiting--;
+			}
+
+			break;
+			
+		}
+
+
+		mutex_unlock(&rotarea_list_lock);
+		
+		schedule();
+	}
+
+	for (d = low; d <= high; d++)
+		finish_wait(&rotarea_list[d]->wq, &w);
+	mutex_unlock(&rotarea_list_lock);
+
+	pr_debug("[OS_SNU_16] sys_rotlock_write end\n");
 	return 0;
 }
 
@@ -32,6 +213,48 @@ SYSCALL_DEFINE1(rotunlock_read, struct rotation_range __user *, rot)
 {
 	pr_debug("[OS_SNU_16] sys_rotunlock_read start\n");
 
+
+	struct rotation_range r;
+
+	
+	if (copy_from_user(&r, rot, sizeof(*rot)))
+		return -1;
+
+	int low = r.rot.degree - r.degree_range;
+	int high = r.rot.degree + r.degree_range;
+
+	if (low < 0 || high > 360)
+		return -1;
+
+
+	mutex_lock(&dev_rotation_lock);
+
+	int degree = sys_dev_rotation.degree;
+
+	mutex_unlock(&dev_rotation_lock);
+
+
+	mutex_lock(&rotarea_list_lock);
+
+	int d;
+	
+	for (d = low; d <= high; d++) {
+		rotarea_list[d]->read_ref--;
+
+		if (d == degree)
+			wake_up(&rotarea_list[d]->wq);
+
+		if (rotarea_list[d]->read_ref == 0 &&
+		    rotarea_list[d]->write_ref == 0 &&
+		    rotarea_list[d]->write_waiting == 0)
+			DEINIT_ROTAREA(rotarea_list[d]);
+
+	}
+
+	mutex_unlock(&rotarea_list_lock);
+
+
+	pr_debug("[OS_SNU_16] sys_rotunlock_read end\n");
 	return 0;
 }
 
@@ -39,5 +262,87 @@ SYSCALL_DEFINE1(rotunlock_write, struct rotation_range __user *, rot)
 {
 	pr_debug("[OS_SNU_16] sys_rotunlock_write start\n");
 
+
+	struct rotation_range r;
+
+	
+	if (copy_from_user(&r, rot, sizeof(*rot)))
+		return -1;
+
+	int low = r.rot.degree - r.degree_range;
+	int high = r.rot.degree + r.degree_range;
+
+	if (low < 0 || high > 360)
+		return -1;
+
+
+	mutex_lock(&dev_rotation_lock);
+
+	int degree = sys_dev_rotation.degree;
+
+	mutex_unlock(&dev_rotation_lock);
+
+
+	mutex_lock(&rotarea_list_lock);
+
+	int d;
+
+	for (d = low; d <= high; d++) {
+		rotarea_list[d]->write_ref--;
+		pr_debug("[OS_SNU_16] sys_rotunlock_write wr: %d\n",
+			 rotarea_list[d]->write_ref);
+
+		if (d == degree)
+			wake_up(&rotarea_list[d]->wq);
+
+		if (!waitqueue_active(&rotarea_list[d]->wq) &&
+		    rotarea_list[d]->write_ref == 0 &&
+		    rotarea_list[d]->write_waiting == 0)
+			DEINIT_ROTAREA(rotarea_list[d]);
+
+	}
+
+	mutex_unlock(&rotarea_list_lock);
+
+
+	pr_debug("[OS_SNU_16] sys_rotunlock_write end\n");
 	return 0;
+}
+
+int is_range_read_lockable(int low, int high)
+{
+	int not_lockable = 0;
+	int d;
+
+	for (d = low; d <= high; d++) {
+		if (rotarea_list[d] != NULL) {
+			pr_debug("[OS_SNU_16] is_range_read_lockable %d\n",
+				 rotarea_list[d]->write_ref);
+		        not_lockable |= rotarea_list[d]->write_ref;
+			pr_debug("[OS_SNU_16] is_range_read_lockable %d\n",
+				 rotarea_list[d]->write_waiting);
+		        not_lockable |= rotarea_list[d]->write_waiting;
+		}
+	}
+	
+	return !not_lockable;
+}
+
+int is_range_write_lockable(int low, int high)
+{
+	int not_lockable = 0;
+	int d;
+
+	for (d = low; d <= high; d++) {
+		if (rotarea_list[d] != NULL) {
+			pr_debug("[OS_SNU_16] is_range_write_lockable rr: %d\n",
+				 rotarea_list[d]->read_ref);
+		        not_lockable |= rotarea_list[d]->read_ref;
+			pr_debug("[OS_SNU_16] is_range_write_lockable wr: %d\n",
+				 rotarea_list[d]->write_ref);
+		        not_lockable |= rotarea_list[d]->write_ref;
+		}
+	}
+	
+	return !not_lockable;
 }
