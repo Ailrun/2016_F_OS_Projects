@@ -35,7 +35,7 @@ static struct __rotarea_t *(rotarea_list[361]) = {NULL, };
 static DEFINE_MUTEX(dev_rotation_lock);
 static struct dev_rotation sys_dev_rotation;
 
-//static int wake_up_with_count(wait_queue_head_t *q);
+static int wake_up_with_count(wait_queue_head_t *q);
 static int is_range_read_lockable(int low, int high);
 static int is_range_write_lockable(int low, int high);
 
@@ -57,12 +57,12 @@ SYSCALL_DEFINE1(set_rotation, struct dev_rotation __user *, rot)
 	mutex_unlock(&dev_rotation_lock);
 
 
+	int wake_count = 0;
+
 	mutex_lock(&rotarea_list_lock);
 
-	if (rotarea_list[degree] != NULL &&
-	    rotarea_list[degree]->read_ref == 0 &&
-	    rotarea_list[degree]->write_waiting == 0)
-	        wake_up(&rotarea_list[degree]->wq);
+	if (rotarea_list[degree] != NULL)
+	        wake_count = wake_up_with_count(&rotarea_list[degree]->wq);
 
 	mutex_unlock(&rotarea_list_lock);
 
@@ -70,7 +70,7 @@ SYSCALL_DEFINE1(set_rotation, struct dev_rotation __user *, rot)
 	pr_debug("[OS_SNU_16] sys_dev_rotation = %d\n", degree);
 
 	pr_debug("[OS_SNU_16] sys_set_rotation end\n");
-	return 0;
+	return wake_count;
 }
 
 SYSCALL_DEFINE1(rotlock_read, struct rotation_range __user *, rot)
@@ -270,7 +270,7 @@ SYSCALL_DEFINE1(rotunlock_read, struct rotation_range __user *, rot)
 		rotarea_list[d]->read_ref--;
 
 		if (d == degree)
-			wake_up(&rotarea_list[d]->wq);
+			wake_up_all(&rotarea_list[d]->wq);
 
 		if (rotarea_list[d]->read_ref == 0 &&
 		    rotarea_list[d]->write_ref == 0 &&
@@ -319,7 +319,7 @@ SYSCALL_DEFINE1(rotunlock_write, struct rotation_range __user *, rot)
 		rotarea_list[d]->write_ref--;
 
 		if (d == degree)
-			wake_up(&rotarea_list[d]->wq);
+			wake_up_all(&rotarea_list[d]->wq);
 
 		if (!waitqueue_active(&rotarea_list[d]->wq) &&
 		    rotarea_list[d]->write_ref == 0 &&
@@ -335,7 +335,6 @@ SYSCALL_DEFINE1(rotunlock_write, struct rotation_range __user *, rot)
 	return 0;
 }
 
-/*
 int wake_up_with_count(wait_queue_head_t *q)
 {
 	int count = 0;
@@ -347,15 +346,21 @@ int wake_up_with_count(wait_queue_head_t *q)
 	wait_queue_t *curr, *next;
 
 	list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
-		curr->func(curr, TASK_NORMAL, 0, NULL);
+		unsigned flags = curr->flags;
+
 		count++;
+		pr_debug("[OS_SNU_16] list loop wake_up_with_count: %d\n",
+				count);
+
+		if (curr->func(curr, TASK_NORMAL, 0, NULL) &&
+		    (flags & WQ_FLAG_EXCLUSIVE))
+			break;
 	}
 
 	spin_unlock_irqrestore(&q->lock, flags);
 
 	return count;
 }
-*/
 
 int is_range_read_lockable(int low, int high)
 {
