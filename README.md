@@ -21,27 +21,11 @@ $ tar cf IMAGE.tar -C arch/arm/boot dzImage -C ../../../usr/tmp-mod modules.img
 ```
 $ cd <this kernel path>/test
 ```
-
-다음의 경로에서 각각 Makefile 두 번째 줄을 다음과 같이 변경한다.
-
+다음의 경로에서 path를 변경한다.
 ```
-$ vi ./rotd/Makefile
-$ vi Makefile
-GCCROOT=<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin
+$ vi Config.mk
+TOOLBASEDIR=<extraction path>
 ```
-
-```
-$ vi ./selector/Makefile
-$ vi Makefile
-GCCROOT=<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin31
-```
-
-```
-$ vi ./trial/Makefile
-$ vi Makefile
-GCCROOT=<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin31
-```
-
 ```
 $ make
 ```
