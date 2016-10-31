@@ -269,15 +269,15 @@ SYSCALL_DEFINE1(rotunlock_read, struct rotation_range __user *, rot)
 	for (d = low; d <= high; d++) {
 		rotarea_list[d]->read_ref--;
 
-		if (d == degree)
-			wake_up_all(&rotarea_list[d]->wq);
-
 		if (rotarea_list[d]->read_ref == 0 &&
 		    rotarea_list[d]->write_ref == 0 &&
 		    rotarea_list[d]->write_waiting == 0)
 			DEINIT_ROTAREA(rotarea_list[d]);
 
 	}
+
+	if (rotarea_list[degree] != NULL)
+		wake_up_all(&rotarea_list[degree]->wq);
 
 	mutex_unlock(&rotarea_list_lock);
 
@@ -318,15 +318,15 @@ SYSCALL_DEFINE1(rotunlock_write, struct rotation_range __user *, rot)
 	for (d = low; d <= high; d++) {
 		rotarea_list[d]->write_ref--;
 
-		if (d == degree)
-			wake_up_all(&rotarea_list[d]->wq);
-
 		if (!waitqueue_active(&rotarea_list[d]->wq) &&
 		    rotarea_list[d]->write_ref == 0 &&
 		    rotarea_list[d]->write_waiting == 0)
 			DEINIT_ROTAREA(rotarea_list[d]);
 
 	}
+
+	if (rotarea_list[degree] != NULL)
+		wake_up_all(&rotarea_list[degree]->wq);
 
 	mutex_unlock(&rotarea_list_lock);
 
