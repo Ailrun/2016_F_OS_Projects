@@ -16,6 +16,7 @@
 #define DEINIT_ROTAREA(rotareap)		\
 	do {					\
 		kfree(rotareap);		\
+		rotareap = NULL;		\
 	} while (0)
 
 struct __rotarea_t {
@@ -28,7 +29,7 @@ struct __rotarea_t {
 typedef struct __rotarea_t rotarea_t;
 
 static DEFINE_MUTEX(rotarea_list_lock);
-static rotarea_t *(rotarea_list[361]);
+static rotarea_t *(rotarea_list[361]) = {NULL, };
 
 static DEFINE_MUTEX(dev_rotation_lock);
 static struct dev_rotation sys_dev_rotation;
@@ -180,6 +181,8 @@ SYSCALL_DEFINE1(rotlock_write, struct rotation_range __user *, rot)
 
 		lockable = is_range_write_lockable(low, high);
 
+		pr_debug("[OS_SNU_16] sys_rotlock_write lockable: %d\n", lockable);
+
 		if (lockable) {
 			for (d = low; d <= high; d++) {
 				if (rotarea_list[d] == NULL)
@@ -286,6 +289,8 @@ SYSCALL_DEFINE1(rotunlock_write, struct rotation_range __user *, rot)
 
 	for (d = low; d <= high; d++) {
 		rotarea_list[d]->write_ref--;
+		pr_debug("[OS_SNU_16] sys_rotunlock_write wr: %d\n",
+			 rotarea_list[d]->write_ref);
 
 		if (d == degree)
 			wake_up(&rotarea_list[d]->wq);
@@ -311,7 +316,11 @@ int is_range_read_lockable(int low, int high)
 
 	for (d = low; d <= high; d++) {
 		if (rotarea_list[d] != NULL) {
+			pr_debug("[OS_SNU_16] is_range_read_lockable %d\n",
+				 rotarea_list[d]->write_ref);
 		        not_lockable |= rotarea_list[d]->write_ref;
+			pr_debug("[OS_SNU_16] is_range_read_lockable %d\n",
+				 rotarea_list[d]->write_waiting);
 		        not_lockable |= rotarea_list[d]->write_waiting;
 		}
 	}
@@ -326,7 +335,11 @@ int is_range_write_lockable(int low, int high)
 
 	for (d = low; d <= high; d++) {
 		if (rotarea_list[d] != NULL) {
+			pr_debug("[OS_SNU_16] is_range_write_lockable rr: %d\n",
+				 rotarea_list[d]->read_ref);
 		        not_lockable |= rotarea_list[d]->read_ref;
+			pr_debug("[OS_SNU_16] is_range_write_lockable wr: %d\n",
+				 rotarea_list[d]->write_ref);
 		        not_lockable |= rotarea_list[d]->write_ref;
 		}
 	}
