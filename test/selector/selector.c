@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include <sys/syscall.h>
 
 #include <linux/rotation.h>
@@ -37,17 +39,20 @@ usage:
 void selector(int number)
 {
 	struct rotation_range srrange = {{90}, 90};
-	FILE *file;
+	int file;
+	char buf[128];
 
 	syscall(SYSCALL_ROTLOCK_WRITE, &srrange);
-	file = fopen(SELECTOR_FILE_NAME, "w");
+	
+	file = open(SELECTOR_FILE_NAME, O_WRONLY);
 
-	if (file == NULL)
+	if (file < 0)
 		goto open_error;
 
-	fprintf(file, "%d\n", number);
+	sprintf(buf, "%d", number);
+	write(file, buf, strlen(buf));
 
-	fclose(file);
+	close(file);
 
 	printf("selector: %d\n", number);
 

@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/syscall.h>
 
 #include <linux/rotation.h>
@@ -22,19 +23,21 @@ int main(void)
 void trial(void)
 {
 	struct rotation_range trrange = {{30}, 30};
-	FILE* file;
+	int file;
+	char buf[128];
 	int number;
 	int exp, prime;
 	int first = 1;
 
 	syscall(SYSCALL_ROTLOCK_READ, &trrange);
-	file = fopen(TRIAL_FILE_NAME, "r");
+	file = open(TRIAL_FILE_NAME, O_RDONLY);
 
-	if (file == NULL)
+	if (file < 0)
 		goto open_error;
 
-	fscanf(file, "%d", &number);
+	read(file, buf, 128);
 
+	number = atoi(buf);
 	exp = 0;
 	printf("trial: ");
 
@@ -61,7 +64,7 @@ void trial(void)
 		printf("*");
 	printf("%d^%d\n", prime, exp);
 
-	fclose(file);
+	close(file);
 	syscall(SYSCALL_ROTUNLOCK_READ, &trrange);
 
 	return;
