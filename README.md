@@ -60,16 +60,16 @@ $ /home/developer/trial <Buffer Length>
 
 ## High-level Design and Implementation
 - 유저와 커널 사이 교환이 제대로 되지 않을 경우 -1을 Return 한다. 이때 lock을 걸고 작업해야 한다.
-- read와 write의 reference 변수, 그리고 write를 기다리는 작업의 수와 큐를 포함한 rotareat_t라는 struct의 Linked List를 구현한다.
-- Linked List에 degree를 포함하는 작업이 있고 read/write lock이 잡혀 있지 않다면 기다리고 있는 작업을 깨운다. &rarr; `set_rotation`
+- read와 write의 reference 변수, 그리고 write를 기다리는 작업의 수와 큐를 포함한 rotareat_t라는 struct의 Pointer Array를 구현한다.
+- Array에 degree를 포함하는 작업이 있고 read/write lock이 잡혀 있지 않다면 기다리고 있는 작업을 깨운다. &rarr; `set_rotation`
 - Lock의 범위를 low와 high 변수가 체크하고 이를 벗어나면 -1을 return한다.
-- Lock의 범위 안에 작업이 있을 경우 waiting 큐에 넣고, 없을 경우엔 리스트를 초기화 한다.
+- Lock의 범위 안에 작업이 있을 경우 waiting 큐에 넣고, 없을 경우엔 array를 초기화 한다.
 - Lock의 범위 안에서 Lock을 걸 수 있는 상태이면 read/write의 reference를 증가시키고 lock을 건다.
 - write의 경우 lock을 걸 때 write를 기다리는 작업의 수를 하나 감소시킨다.
 - Unlock의 경우 read/write reference를 감소시키며 degree를 포함하는 다음 작업이 있다면 이를 깨운다.
-- 기다리는 큐도 없고 lock도 잡혀 있지 않다면 리스트를 초기화 한다.
+- 기다리는 큐도 없고 lock도 잡혀 있지 않다면 array를 초기화 한다.
 &rarr; `rotlock_read`, `rotlock_write`, `rotunlock_read`, `rotunlock_write`
 
 ## Lessons Learned
 - Reader/Writer Lock의 개념을 이해하였다.
-- Queue를 이용한 Linked List의 Lock을 고려해볼 수 있었다.
+- Queue를 이용한 Lock을 고려해볼 수 있었다.
