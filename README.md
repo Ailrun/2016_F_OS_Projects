@@ -29,12 +29,12 @@ $ vi Config.mk
 TOOLBASEDIR=<extraction path>
 ```
 
-Config.mk의 TOOLBASEDIR을 tizen 컴파일러들이 있는 opt의 부모 directory로 지정한다.
-ex) tizen 컴파일러가 /opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin에 있다면
-TOOLBASEDIR=
-or
-/home/user/download/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin에 있다면
-TOOLBASEDIR=/home/user/download
+Config.mk의 TOOLBASEDIR을 tizen 컴파일러들이 있는 opt의 부모 directory로 지정한다.<br/>
+ex) tizen 컴파일러가 /opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin에 있다면<br/>
+TOOLBASEDIR=<br/>
+or<br/>
+/home/user/download/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin에 있다면<br/>
+TOOLBASEDIR=/home/user/download<br/>
 
 ```
 $ make
