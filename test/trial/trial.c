@@ -15,6 +15,8 @@ int main(void)
 	while(1) {
 		trial();
 	}
+
+	return 0;
 }
 
 void trial(void)
