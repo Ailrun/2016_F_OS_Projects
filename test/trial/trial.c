@@ -29,7 +29,11 @@ void trial(void)
 	int exp, prime;
 	int first = 1;
 
-	syscall(SYSCALL_ROTLOCK_READ, &trrange);
+	int locked;
+	locked = syscall(SYSCALL_ROTLOCK_READ, &trrange);
+	if (locked == -1)
+		exit(1);
+
 	file = open(TRIAL_FILE_NAME, O_RDONLY);
 
 	if (file < 0)

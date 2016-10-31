@@ -43,7 +43,10 @@ void selector(int number)
 	int file;
 	char buf[128];
 
-	syscall(SYSCALL_ROTLOCK_WRITE, &srrange);
+	int locked;
+	locked = syscall(SYSCALL_ROTLOCK_WRITE, &srrange);
+	if (locked == -1)
+		exit(1);
 
 	file = open(SELECTOR_FILE_NAME, O_WRONLY);
 
