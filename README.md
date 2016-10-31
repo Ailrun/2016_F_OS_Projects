@@ -66,6 +66,36 @@ $ /home/developer/trial <Buffer Length>
 
 테스트 프로그램을 실행시키면 다음과 같은 결과를 얻을 수 있다.
 
+```
+$ ./rotd           
+$ ./selector 1 &   
+1214
+$ ./trial &
+1215
+$ ./trial &
+1216
+```
+
+```
+$ ./rotd                                      
+$ ./selector 5 &
+1226
+$ ./trial &
+1227
+$ ./trial &
+1229
+```
+
+```
+$ ./rotd         
+$ ./selector 10 &
+1242
+$ ./trial &      
+1243
+$ ./trial &      
+1244
+```
+
 
 
 ## High-level Design and Implementation
