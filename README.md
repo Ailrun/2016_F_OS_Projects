@@ -74,26 +74,47 @@ $ ./trial &
 1215
 $ ./trial &
 1216
-```
-
-```
-$ ./rotd                                      
-$ ./selector 5 &
-1226
-$ ./trial &
-1227
-$ ./trial &
-1229
-```
-
-```
-$ ./rotd         
-$ ./selector 10 &
-1242
-$ ./trial &      
-1243
-$ ./trial &      
-1244
+...
+selector: 56553
+trial: 2^2*11^1*12853^1
+selector: 56554
+trial: 2^1*3^4*3491^1
+selector: 56555
+trial: 2^4*13^1*2719^1
+selector: 56556
+trial: 2^1*83^1*3407^1
+selector: 56557
+trial: 2^2*3^1*7^1*6733^1
+selector: 56558
+trial: 2^1*37^1*7643^1
+selector: 56559
+trial: 2^3*19^1*61^2
+selector: 56560
+trial: 2^1*3^1*107^1*881^1
+trial: 2^1*3^1*107^1*881^1
+trial: 2^1*3^1*107^1*881^1
+trial: 2^1*3^1*107^1*881^1
+selector: 56561
+trial: 2^2*141403^1
+selector: 56562
+trial: 2^1*43^1*6577^1
+selector: 56563
+trial: 2^7*3^2*491^1
+selector: 56564
+trial: 2^1*7^1*11^1*3673^1
+trial: 2^1*7^1*11^1*3673^1
+selector: 56565
+trial: 2^2*141413^1
+selector: 56566
+trial: 2^1*3^1*23^1*4099^1
+selector: 56567
+trial: 2^3*70709^1
+selector: 56568
+trial: 2^1*13^1*21757^1
+selector: 56569
+trial: 2^2*3^1*17^1*47^1*59^1
+selector: 56570
+trial: 2^1*282851^1
 ```
 
 
