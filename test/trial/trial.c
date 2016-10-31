@@ -12,7 +12,9 @@ void trial(void);
 
 int main(void)
 {
-	trial();
+	while(1) {
+		trial();
+	}
 }
 
 void trial(void)
