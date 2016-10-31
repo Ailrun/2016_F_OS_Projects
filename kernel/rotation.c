@@ -62,7 +62,7 @@ SYSCALL_DEFINE1(set_rotation, struct dev_rotation __user *, rot)
 	mutex_lock(&rotarea_list_lock);
 
 	if (rotarea_list[degree] != NULL)
-	        wake_count = wake_up_with_count(&rotarea_list[degree]->wq);
+		wake_count = wake_up_with_count(&rotarea_list[degree]->wq);
 
 	mutex_unlock(&rotarea_list_lock);
 
@@ -129,7 +129,7 @@ SYSCALL_DEFINE1(rotlock_read, struct rotation_range __user *, rot)
 		schedule();
 
 		if (signal_pending(current))
-		        goto signal;
+			goto signal;
 
 		pr_debug("[OS_SNU_16] end loop of sys_rotlock_read\n");
 	}
@@ -217,7 +217,7 @@ SYSCALL_DEFINE1(rotlock_write, struct rotation_range __user *, rot)
 		schedule();
 
 		if (signal_pending(current))
-		        goto signal;
+			goto signal;
 
 		pr_debug("[OS_SNU_16] end loop of sys_rotlock_write\n");
 	}
