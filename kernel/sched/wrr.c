@@ -2,16 +2,6 @@
 
 #include "sched.h"
 
-SYSCALL_DEFINE2(sched_setweight, pid_t, pid, int, weight)
-{
-	return 0;
-}
-
-SYSCALL_DEFINE1(sched_getweight, pid_t, pid)
-{
-	return 0;
-}
-
 const struct sched_class wrr_sched_class = {
 	.next			= NULL,
 	.enqueue_task		= NULL,

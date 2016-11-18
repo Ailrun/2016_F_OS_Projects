@@ -4384,6 +4384,25 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
 }
 
 /**
+ * sys_sched_setweight - set the weight of a process
+ * @pid: pid of the process
+ * @weight: weight to set on process
+ */
+SYSCALL_DEFINE2(sched_setweight, pid_t, pid, int, weight)
+{
+	return 0;
+}
+
+/**
+ * sys_sched_getweight - get the weight of a process
+ * @pid: pid of the process
+ */
+SYSCALL_DEFINE1(sched_getweight, pid_t, pid)
+{
+	return 0;
+}
+
+/**
  * sys_sched_yield - yield the current processor to other threads.
  *
  * This function yields the current CPU to other tasks. If there are no
