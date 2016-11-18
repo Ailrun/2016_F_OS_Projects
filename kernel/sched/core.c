@@ -3939,7 +3939,7 @@ recheck:
 
 		if (policy != SCHED_FIFO && policy != SCHED_RR &&
 				policy != SCHED_NORMAL && policy != SCHED_BATCH &&
-				policy != SCHED_IDLE)
+				policy != SCHED_IDLE && policy != SCHED_WRR)
 			return -EINVAL;
 	}
 
@@ -4384,6 +4384,25 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
 }
 
 /**
+ * sys_sched_setweight - set the weight of a process
+ * @pid: pid of the process
+ * @weight: weight to set on process
+ */
+SYSCALL_DEFINE2(sched_setweight, pid_t, pid, int, weight)
+{
+	return 0;
+}
+
+/**
+ * sys_sched_getweight - get the weight of a process
+ * @pid: pid of the process
+ */
+SYSCALL_DEFINE1(sched_getweight, pid_t, pid)
+{
+	return 0;
+}
+
+/**
  * sys_sched_yield - yield the current processor to other threads.
  *
  * This function yields the current CPU to other tasks. If there are no
@@ -4626,6 +4645,7 @@ SYSCALL_DEFINE1(sched_get_priority_max, int, policy)
 	switch (policy) {
 	case SCHED_FIFO:
 	case SCHED_RR:
+	case SCHED_WRR:
 		ret = MAX_USER_RT_PRIO-1;
 		break;
 	case SCHED_NORMAL:
@@ -4651,6 +4671,7 @@ SYSCALL_DEFINE1(sched_get_priority_min, int, policy)
 	switch (policy) {
 	case SCHED_FIFO:
 	case SCHED_RR:
+	case SCHED_WRR:
 		ret = 1;
 		break;
 	case SCHED_NORMAL:
