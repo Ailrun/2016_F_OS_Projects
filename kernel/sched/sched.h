@@ -108,6 +108,7 @@ extern struct mutex sched_domains_mutex;
 #include <linux/cgroup.h>
 
 struct cfs_rq;
+struct wrr_rq;
 struct rt_rq;
 
 extern struct list_head task_groups;
@@ -145,6 +146,9 @@ struct task_group {
 	atomic64_t load_avg;
 	atomic_t runnable_avg, usage_avg;
 #endif
+
+	struct sched_wrr_entity **wrr_se;
+	struct wrr_rq **wrr_rq;
 
 #ifdef CONFIG_RT_GROUP_SCHED
 	struct sched_rt_entity **rt_se;
@@ -321,6 +325,20 @@ struct cfs_rq {
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 };
 
+struct wrr_rq {
+	unsigned int wrr_nr_running;
+#ifdef CONFIG_SMP
+	unsigned long wrr_nr_total;
+#endif
+	u64 wrr_time;
+	u64 wrr_runtime;
+	raw_spinlock_t wrr_runtime_lock;
+
+	struct rq *rq;
+	struct list_head leaf_wrr_rq_list;
+	struct task_group *tg;
+};
+
 static inline int rt_bandwidth_enabled(void)
 {
 	return sysctl_sched_rt_runtime >= 0;
@@ -422,6 +440,7 @@ struct rq {
 	u64 nr_switches;
 
 	struct cfs_rq cfs;
+	struct wrr_rq wrr;
 	struct rt_rq rt;
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
