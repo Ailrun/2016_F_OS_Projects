@@ -48,7 +48,7 @@ static struct sched_wrr_entity *pick_next_task_wrr_entity(struct rq *rq,
 	return next;
 }
 
-static struct task_struct *_pick_next_task_rt(struct rq *rq)
+static struct task_struct *_pick_next_task_wrr(struct rq *rq)
 {
 	struct sched_wrr_entity *wrr_se;
 	struct task_struct *p;
