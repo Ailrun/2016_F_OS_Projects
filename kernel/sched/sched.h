@@ -326,6 +326,7 @@ struct cfs_rq {
 };
 
 struct wrr_rq {
+	struct list_head queue;
 	unsigned int wrr_nr_running;
 #ifdef CONFIG_SMP
 	unsigned long wrr_nr_total;
