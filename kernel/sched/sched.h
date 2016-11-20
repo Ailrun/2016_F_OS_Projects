@@ -440,6 +440,7 @@ struct rq {
 	u64 nr_switches;
 
 	struct cfs_rq cfs;
+	struct wrr_rq wrr;
 	struct rt_rq rt;
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
