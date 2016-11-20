@@ -22,9 +22,8 @@ void init_wrr_rq(struct wrr_rq *wrr_rq) {
 
 static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
-	// struct sched_wrr_entity *wrr_entity = rq->wrr.ready_task;
-
 	struct wrr_rq *wrr_rq = &rq->wrr;
+	
 	if(!wrr_rq) {
 		return;
 	}
@@ -36,7 +35,7 @@ static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 
 static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
-	struct sched_wrr_entity *wrr_entity = rq->wrr.ready_task;
+	struct wrr_rq *wrr_rq = &rq->wrr;
 	
 	if(!wrr_entity)
 		return;
