@@ -6,6 +6,9 @@ int sched_wrr_timeslice = WRR_TIMESLICE;
 
 #define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
 
+#define for_each_sched_wrr_entity(wrr_se) \
+	for (; wrr_se; wrr_se = wrr_se->parent)
+
 static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 {
 #ifdef CONFIG_SCHED_DEBUG
@@ -43,6 +46,31 @@ static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	list_del_init(&wrr_rq->queue);
 	rq->nr_running--;
 	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
+}
+
+static void
+requeue_wrr_entity(struct wrr_rq *wrr_rq, struct sched_wrr_entity *wrr_se, int head)
+{
+	if (!list_empty(&wrr_se->run_list)) {
+		struct list_head *queue = &wrr_rq->queue;
+
+		if (head)
+			list_move(&wrr_se->run_list, queue);
+		else
+			list_move_tail(&wrr_se->run_list, queue);
+	}
+}
+
+static void
+requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
+{
+	struct sched_wrr_entity *wrr_se = &p->wrr;
+	struct wrr_rq *wrr_rq;
+
+	for_each_sched_wrr_entity(wrr_se) {
+		wrr_rq = wrr_se->wrr_rq;
+		requeue_wrr_entity(wrr_rq, wrr_se, head);
+	}
 }
 
 static void yield_task_wrr(struct rq *rq)
@@ -158,6 +186,23 @@ static void set_curr_task_wrr(struct rq *rq)
 
 static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 {
+	struct sched_wrr_entity *wrr_se = &p->wrr;
+	
+	if (p->policy != SCHED_WRR)
+		return;
+
+	if (--wrr_se->time_slice)
+		return;
+
+	wrr_se->time_slice = sched_wrr_timeslice;
+
+	for_each_sched_wrr_entity(wrr_se) {
+		if (wrr_se->run_list.prev != wrr_se->run_list.next) {
+			requeue_task_wrr(rq,p,0);
+			set_tsk_need_resched(p);
+			return;
+		}
+	}
 }
 
 static void task_fork_wrr(struct task_struct *p)
