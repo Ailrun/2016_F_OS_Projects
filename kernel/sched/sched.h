@@ -13,6 +13,8 @@
 
 extern __read_mostly int scheduler_running;
 
+extern void init_wrr_rq(struct wrr_rq *);
+
 /*
  * Convert user-nice values [ -20 ... 0 ... 19 ]
  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],

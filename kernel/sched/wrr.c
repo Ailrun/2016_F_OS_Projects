@@ -28,7 +28,7 @@ static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 		return;
 	}
 	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
-	list_add_tail(&(p->wrr.run_list),&(wrr_rq->rq->queue));
+	list_add_tail(&(p->wrr.run_list),&wrr_rq->queue);
 	rq->nr_running++;
 	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
 }
@@ -40,7 +40,7 @@ static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	if(!wrr_rq)
 		return;
 	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
-	list_del_init(&(wrr_rq->rq->queue));
+	list_del_init(&wrr_rq->queue);
 	rq->nr_running--;
 	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
 }
