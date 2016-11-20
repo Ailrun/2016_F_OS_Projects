@@ -60,11 +60,11 @@ static void
 {
 }
 
-static struct sched_wrr_entity *pick_next_task_wrr_entity(struct rq *rq,
+static struct sched_wrr_entity *pick_next_wrr_entity(struct rq *rq,
 								struct wrr_rq *wrr_rq)
 {
 	struct sched_wrr_entity *next = NULL;
-	struct list_head *queue = wrr->rq->queue;
+	struct list_head *queue = &wrr_rq->queue;
 
 	next = list_entry(queue->next, struct sched_wrr_entity, run_list);
 
@@ -75,7 +75,7 @@ static struct task_struct *_pick_next_task_wrr(struct rq *rq)
 {
 	struct sched_wrr_entity *wrr_se;
 	struct task_struct *p;
-	struct wrr_wq *wrr_rq;
+	struct wrr_rq *wrr_rq;
 	
 	wrr_rq = &rq->wrr;
 
