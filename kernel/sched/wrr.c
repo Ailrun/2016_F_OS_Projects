@@ -1,6 +1,18 @@
+#include "sched.h"
+
 #include <linux/syscalls.h>
 
-#include "sched.h"
+int sched_wrr_timeslice = WRR_TIMESLICE;
+
+#define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
+
+static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
+{
+#ifdef CONFIG_SCHED_DEBUG
+	WARN_ON_ONCE(!wrr_entity_is_task(wrr_se));
+#endif
+	return container_of(wrr_se, struct task_struct, wrr);
+}
 
 static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
@@ -25,9 +37,50 @@ static void
 {
 }
 
+static struct sched_wrr_entity *pick_next_task_wrr_entity(struct rq *rq,
+								struct wrr_rq *wrr_rq)
+{
+	struct sched_wrr_entity *next = NULL;
+	struct list_head *queue = wrr->rq->queue;
+
+	next = list_entry(queue->next, struct sched_wrr_entity, run_list);
+
+	return next;
+}
+
+static struct task_struct *_pick_next_task_rt(struct rq *rq)
+{
+	struct sched_wrr_entity *wrr_se;
+	struct task_struct *p;
+	struct wrr_wq *wrr_rq;
+	
+	wrr_rq = &rq->wrr;
+
+	if (!wrr_rq->wrr_nr_running)
+		return NULL;
+
+	do {
+		wrr_se = pick_next_wrr_entity(rq, wrr_rq);
+		BUG_ON(!wrr_se);
+		wrr_rq = wrr_se->my_q;
+	} while (wrr_rq);
+
+	p = wrr_task_of(wrr_se);
+	p->se.exec_start = rq->clock_task;
+
+	return p;
+}
+
 static struct task_struct *pick_next_task_wrr(struct rq *rq)
 {
-	return NULL;
+	struct task_struct *p = _pick_next_task_wrr(rq);
+
+#ifdef CONFIG_SMP
+
+//	rq->post_schedule = 0;
+#endif
+
+	return p;
 }
 
 static void put_prev_task_wrr (struct rq *rq, struct task_struct *p)
