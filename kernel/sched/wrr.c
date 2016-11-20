@@ -14,12 +14,34 @@ static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 	return container_of(wrr_se, struct task_struct, wrr);
 }
 
+static void init_wrr_rq(struct wrr_rq *wrr_rq) {
+	INIT_LIST_HEAD(&wrr_rq->queue);
+	raw_spin_lock_init(&wrr_rq->wrr_runtime_lock);
+
+}
+
 static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
+	// struct sched_wrr_entity *wrr_entity = rq->wrr.ready_task;
+
+	struct wrr_rq *wrr_rq = &rq->wrr;
+	if(!wrr_rq) {
+		return;
+	}
+	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
+	list_add_tail(&(p->wrr.run_list),&(wrr_rq->rq->queue));
+	rq->nr_running++;
+	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
 }
 
 static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
+	struct sched_wrr_entity *wrr_entity = rq->wrr.ready_task;
+	
+	if(!wrr_entity)
+		return;
+	list_del_init(&(wrr.entity->run_list));
+	rq->nr_running--;
 }
 
 static void yield_task_wrr(struct rq *rq)

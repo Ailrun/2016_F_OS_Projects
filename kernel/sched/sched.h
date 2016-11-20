@@ -327,13 +327,16 @@ struct cfs_rq {
 
 struct wrr_rq {
 	struct list_head queue;
+	raw_spinlock_t wrr_runtime_lock;
+
+
+
 	unsigned int wrr_nr_running;
 #ifdef CONFIG_SMP
 	unsigned long wrr_nr_total;
 #endif
 	u64 wrr_time;
 	u64 wrr_runtime;
-	raw_spinlock_t wrr_runtime_lock;
 
 	struct rq *rq;
 	struct list_head leaf_wrr_rq_list;
