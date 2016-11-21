@@ -145,7 +145,7 @@ static void put_prev_task_wrr (struct rq *rq, struct task_struct *p)
 
 static int select_task_rq_wrr(struct task_struct *p, int sd_flag, int flags)
 {
-	return 0;
+	return task_cpu(p);
 }
 
 static void migrate_task_rq_wrr(struct task_struct *p, int next_cpu)
@@ -185,6 +185,8 @@ static void rq_offline_wrr(struct rq *rq)
 
 static void set_curr_task_wrr(struct rq *rq)
 {
+	struct task_struct *p = rq->curr;
+	p->se.exec_start = rq->clock;
 }
 
 static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
