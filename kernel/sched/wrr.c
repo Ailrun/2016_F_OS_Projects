@@ -22,6 +22,7 @@ static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 
 void init_wrr_rq(struct wrr_rq *wrr_rq)
 {
+	wrr_rq->wrr_weight_total = 0;
 	INIT_LIST_HEAD(&wrr_rq->queue);
 	raw_spin_lock_init(&wrr_rq->wrr_runtime_lock);
 }
@@ -30,12 +31,16 @@ static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
 	struct wrr_rq *wrr_rq = &rq->wrr;
 	
-	if(!wrr_rq) {
+	if(!wrr_rq) 
 		return;
-	}
+	
 	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
+	
 	list_add_tail(&(p->wrr.run_list),&wrr_rq->queue);
 	rq->nr_running++;
+	wrr_rq->wrr_weight_total += p->wrr.weight;
+	p->on_rq = 1;
+	
 	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
 }
 
@@ -45,9 +50,14 @@ static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	
 	if(!wrr_rq)
 		return;
+
 	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
+
 	list_del_init(&wrr_rq->queue);
 	rq->nr_running--;
+	wrr_rq->wrr_weight_total -= p->wrr.weight;
+	p->on_rq = 0;
+
 	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
 }
 
@@ -210,6 +220,8 @@ static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 
 static void task_fork_wrr(struct task_struct *p)
 {
+	p->wrr.weight = p->real_parent->wrr.weight;
+	p->wrr.time_slice = p->wrr.weight * WRR_TIMESLICE;
 }
 
 static void switched_from_wrr(struct rq *this_rq, struct task_struct *task)
@@ -218,6 +230,8 @@ static void switched_from_wrr(struct rq *this_rq, struct task_struct *task)
 
 static void switched_to_wrr(struct rq *this_rq, struct task_struct *task)
 {
+	task->wrr.weight = 10;
+	task->wrr.time_slice = 10 * WRR_TIMESLICE;
 }
 
 static void
@@ -227,7 +241,7 @@ prio_changed_wrr(struct rq *this_rq, struct task_struct *task, int oldprio)
 
 static unsigned int get_rr_interval_wrr(struct rq *rq, struct task_struct *task)
 {
-	return 0;
+	return task->wrr.weight * WRR_TIMESLICE;
 }
 
 #ifdef CONFIG_FAIR_GROUP_SCHED

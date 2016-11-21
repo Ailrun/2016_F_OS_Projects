@@ -330,7 +330,7 @@ struct wrr_rq {
 	raw_spinlock_t wrr_runtime_lock;
 
 
-	unsigned int wrr_weight_total;
+	unsigned long wrr_weight_total;
 	unsigned int wrr_nr_running;
 #ifdef CONFIG_SMP
 	unsigned long wrr_nr_total;
