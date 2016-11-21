@@ -4,7 +4,7 @@
 
 int sched_wrr_timeslice = WRR_TIMESLICE;
 
-#define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
+#define wrr_entity_is_task(wrr_se) (!(wrr_se)->my_q)
 
 #define for_each_sched_wrr_entity(wrr_se) \
 	for (; wrr_se; wrr_se = wrr_se->parent)
