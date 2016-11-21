@@ -6,8 +6,11 @@ int sched_wrr_timeslice = WRR_TIMESLICE;
 
 #define wrr_entity_is_task(wrr_se) (!(wrr_se)->my_q)
 
+#define for_each_wrr_rq(wrr_rq, iter, rq) \
+	for ((void) iter, wrr_rq = &rq->wrr; wrr_rq; wrr_rq = NULL)
+
 #define for_each_sched_wrr_entity(wrr_se) \
-	for (; wrr_se; wrr_se = wrr_se->parent)
+	for (; wrr_se; wrr_se = NULL)
 
 static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 {
@@ -276,3 +279,18 @@ const struct sched_class wrr_sched_class = {
 	.task_move_group	= task_move_group_wrr,
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 };
+
+#ifdef CONFIG_SCHED_DEBUG
+extern void print_wrr_rq(struct seq_file *m, int cpu, struct wrr_rq *wrr_rq);
+
+void print_wrr_stats(struct seq_file *m, int cpu)
+{
+	struct wrr_rq *iter;
+	struct wrr_rq *wrr_rq;
+
+	rcu_read_lock();
+	for_each_wrr_rq(wrr_rq, iter, cpu_rq(cpu))
+		print_wrr_rq(m, cpu, wrr_rq);
+	rcu_read_unlock();
+}
+#endif /* CONFIG_SCHED_DEBUG */
