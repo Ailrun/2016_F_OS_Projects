@@ -2,20 +2,26 @@
 
 #include <linux/syscalls.h>
 
-#define wrr_entity_is_task(wrr_se) (!(wrr_se)->my_q)
+const struct sched_class wrr_sched_class;
 
 static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 {
-#ifdef CONFIG_SCHED_DEBUG
-	WARN_ON_ONCE(!wrr_entity_is_task(wrr_se));
-#endif
 	return container_of(wrr_se, struct task_struct, wrr);
+}
+
+static inline
+struct sched_wrr_entity *sched_wrr_entity_of(struct list_head *run_list)
+{
+	return container_of(run_list, struct sched_wrr_entity, run_list);
 }
 
 void init_wrr_rq(struct wrr_rq *wrr_rq)
 {
-	INIT_LIST_HEAD(&wrr_rq->queue);
+	INIT_LIST_HEAD(&wrr_rq->run_queue);
+
 	wrr_rq->wrr_weight_total = 0;
+	wrr_rq->cursor = NULL;
+
 	raw_spin_lock_init(&wrr_rq->wrr_runtime_lock);
 }
 
@@ -26,10 +32,13 @@ static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	
 	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
 
-	list_add_tail(&wrr_se->run_list, &wrr_rq->queue);
+	if (wrr_rq->cursor != NULL)
+		list_add_tail(&wrr_se->run_list, &wrr_rq->cursor->wrr.run_list);
+	else {
+	        wrr_rq->cursor = p;
+		list_add_tail(&wrr_se->run_list, &wrr_rq->run_queue);
+	}
 
-	rq->nr_running++;
-	wrr_rq->wrr_nr_running++;
 	wrr_rq->wrr_weight_total += wrr_se->weight;
 	p->on_rq = 1;
 
@@ -40,21 +49,40 @@ static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
 	struct wrr_rq *wrr_rq = &rq->wrr;
 	struct sched_wrr_entity *wrr_se = &p->wrr;
+	struct list_head *next_cursor_list;
 	
 	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
 
+	next_cursor_list = wrr_se->run_list.next;
+
 	list_del_init(&wrr_se->run_list);
 
-	rq->nr_running--;
-	wrr_rq->wrr_nr_running--;
+	if (list_empty(&wrr_rq->run_queue))
+		wrr_rq->cursor = NULL;
+	else if (p == wrr_rq->cursor) {
+		if (next_cursor_list == &wrr_rq->run_queue)
+			next_cursor_list = next_cursor_list->next;
+		wrr_rq->cursor =
+			wrr_task_of(sched_wrr_entity_of(next_cursor_list));
+	}
+
 	wrr_rq->wrr_weight_total -= wrr_se->weight;
 	p->on_rq = 0;
 
 	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
 }
 
-static void yield_task_wrr(struct rq *rq)
+static struct task_struct *pick_next_task_wrr(struct rq *rq)
 {
+	struct task_struct *next = rq->wrr.cursor;
+
+	if (next == NULL)
+		goto skip;
+
+	next->wrr.time_slice = next->wrr.time_slice * WRR_TIMESLICE;
+
+skip:
+	return next;
 }
 
 static bool
@@ -63,26 +91,57 @@ yield_to_task_wrr(struct rq *rq, struct task_struct *p, bool preempt)
 	return true;
 }
 
-static void
- check_preempt_curr_wrr(struct rq *rq, struct task_struct *p, int flags)
+static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
+{
+	struct wrr_rq *wrr_rq = &rq->wrr;
+	struct sched_wrr_entity *wrr_se = &wrr_rq->cursor->wrr;
+	struct list_head *next_cursor_list = wrr_se->run_list.next;
+
+	if (p->policy != SCHED_WRR)
+		return;
+
+	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
+
+	if (--wrr_se->time_slice)
+		goto skip;
+
+	if (wrr_se->run_list.prev != wrr_se->run_list.next) {
+		if (next_cursor_list == &wrr_rq->run_queue)
+			next_cursor_list = next_cursor_list->next;
+		wrr_rq->cursor =
+			wrr_task_of(sched_wrr_entity_of(next_cursor_list));
+		set_tsk_need_resched(p);
+	} else
+		wrr_se->time_slice = wrr_se->weight * WRR_TIMESLICE;
+
+skip:
+	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
+}
+
+static void task_fork_wrr(struct task_struct *p)
+{
+	p->wrr.weight = p->real_parent->wrr.weight;
+	p->wrr.time_slice = p->wrr.weight * WRR_TIMESLICE;
+}
+
+static void switched_to_wrr(struct rq *this_rq, struct task_struct *p)
+{
+	p->wrr.weight = 10;
+	p->wrr.time_slice = p->wrr.weight * WRR_TIMESLICE;
+}
+
+static unsigned int get_rr_interval_wrr(struct rq *rq, struct task_struct *task)
+{
+	return task->wrr.weight * WRR_TIMESLICE;
+}
+
+static void yield_task_wrr(struct rq *rq)
 {
 }
 
-static struct task_struct *pick_next_task_wrr(struct rq *rq)
+static void
+ check_preempt_curr_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
-	struct wrr_rq *wrr_rq = &rq->wrr;
-	struct sched_wrr_entity *next_se;
-	struct task_struct *next;
-
-	if (!wrr_rq->wrr_nr_running)
-		return NULL;
-
-	next_se = list_entry(&wrr_rq->queue, struct sched_wrr_entity, run_list);
-	next = wrr_task_of(next_se);
-
-	next->wrr.time_slice = next->wrr.time_slice * WRR_TIMESLICE;
-
-	return next;
 }
 
 static void put_prev_task_wrr (struct rq *rq, struct task_struct *p)
@@ -135,54 +194,13 @@ static void set_curr_task_wrr(struct rq *rq)
 {
 }
 
-static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
-{
-	struct wrr_rq *wrr_rq = &rq->wrr;
-	struct sched_wrr_entity *wrr_se = &p->wrr;
-	
-	if (p->policy != SCHED_WRR)
-		return;
-
-	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
-
-	if (--wrr_se->time_slice)
-		goto skip;
-
-	if (wrr_se->run_list.prev != wrr_se->run_list.next) {
-		list_move_tail(&wrr_se->run_list, &wrr_rq->queue);
-
-		set_tsk_need_resched(p);
-	} else
-		wrr_se->time_slice = wrr_se->weight * WRR_TIMESLICE;
-
-skip:
-	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
-}
-
-static void task_fork_wrr(struct task_struct *p)
-{
-	p->wrr.weight = p->real_parent->wrr.weight;
-	p->wrr.time_slice = p->wrr.weight * WRR_TIMESLICE;
-}
-
 static void switched_from_wrr(struct rq *this_rq, struct task_struct *p)
 {
-}
-
-static void switched_to_wrr(struct rq *this_rq, struct task_struct *p)
-{
-	p->wrr.weight = 10;
-	p->wrr.time_slice = p->wrr.weight * WRR_TIMESLICE;
 }
 
 static void
 prio_changed_wrr(struct rq *this_rq, struct task_struct *task, int oldprio)
 {
-}
-
-static unsigned int get_rr_interval_wrr(struct rq *rq, struct task_struct *task)
-{
-	return WRR_TIMESLICE;
 }
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
