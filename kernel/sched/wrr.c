@@ -1,4 +1,6 @@
 #include "sched.h"
+#include <linux/slab.h>
+#include <linux/rcupdate.h>
 
 const struct sched_class wrr_sched_class;
 
@@ -175,9 +177,46 @@ static void prio_changed_wrr(struct rq *rq, struct task_struct *p, int oldprio)
 
 #ifdef CONFIG_SMP
 
+static int find_lowest_rq(struct task_struct *p)
+{
+	struct wrr_rq *wrr_rq;
+	int lowest_cpu = -1;
+	unsigned long lowest_weight;
+
+	int cpu;
+
+	for_each_online_cpu(cpu) {
+		wrr_rq = &cpu_rq(cpu)->wrr;
+		if ((lowest_cpu == -1 ||
+		     wrr_rq->wrr_weight_total < lowest_weight) &&
+		    cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) {
+			lowest_cpu = cpu;
+			lowest_weight = wrr_rq->wrr_weight_total;
+		}
+	}
+	return lowest_cpu;
+}
+
 static int select_task_rq_wrr(struct task_struct *p, int sd_flag, int flags)
 {
-	return 0;
+	struct rq *rq;
+	int cpu;
+	int target;
+
+	cpu = task_cpu(p);
+	if (p->nr_cpus_allowed == 1)
+		return cpu;
+
+	rq = cpu_rq(cpu);
+
+	rcu_read_lock();
+
+	target = find_lowest_rq(p);
+	if (target != -1)
+		cpu = target;
+	rcu_read_unlock();
+
+	return cpu;
 }
 
 static
