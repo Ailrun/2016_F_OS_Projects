@@ -147,9 +147,6 @@ struct task_group {
 	atomic_t runnable_avg, usage_avg;
 #endif
 
-	struct sched_wrr_entity **wrr_se;
-	struct wrr_rq **wrr_rq;
-
 #ifdef CONFIG_RT_GROUP_SCHED
 	struct sched_rt_entity **rt_se;
 	struct rt_rq **rt_rq;
@@ -326,21 +323,14 @@ struct cfs_rq {
 };
 
 struct wrr_rq {
-	struct list_head queue;
-	raw_spinlock_t wrr_runtime_lock;
+	struct list_head run_queue;
 
+	struct task_struct *cursor;
 
 	unsigned int wrr_weight_total;
 	unsigned int wrr_nr_running;
-#ifdef CONFIG_SMP
-	unsigned long wrr_nr_total;
-#endif
-	u64 wrr_time;
-	u64 wrr_runtime;
 
-	struct rq *rq;
-	struct list_head leaf_wrr_rq_list;
-	struct task_group *tg;
+	raw_spinlock_t wrr_runtime_lock;
 };
 
 static inline int rt_bandwidth_enabled(void)
