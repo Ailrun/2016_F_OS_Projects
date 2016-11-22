@@ -36,21 +36,10 @@ static void enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
 
 	if (wrr_rq->cursor == NULL) {
-		/*
-		 * If the list is cursorently empty,
-		 * set the cursor to the newly added task and
-		 * add the task to the list
-		 */
 		wrr_rq->cursor = p;
 		list_add_tail(&wrr_se->run_list, &wrr_rq->run_queue);
-	} else {
-		/*
-		 * If the list is not empty,
-		 * simply add the task right before the cursor
-		 */
-
+	} else
 		list_add_tail(&wrr_se->run_list, &wrr_rq->cursor->wrr.run_list);
-	}
 
 	wrr_rq->wrr_weight_total += wrr_se->weight;
 	wrr_rq->wrr_nr_running++;
@@ -73,14 +62,9 @@ static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 
 	list_del_init(&wrr_se->run_list);
 
-	if (is_wrr_rq_empty(wrr_rq)) {
-		/* < If the run queue is empty, set the cursor to null */
+	if (is_wrr_rq_empty(wrr_rq))
 		wrr_rq->cursor = NULL;
-	} else if (p == wrr_rq->cursor) {
-		/*
-		 * Else if the deleting task is the task pointed by the cursor,
-		 * update the cursor appropriately (considering the dummy head)
-		 */
+	else if (p == wrr_rq->cursor) {
 		if (next_cursor_list == &wrr_rq->run_queue)
 			next_cursor_list = next_cursor_list->next;
 		wrr_rq->cursor =
@@ -100,15 +84,41 @@ static struct task_struct *pick_next_task_wrr(struct rq *rq)
 {
 	struct task_struct *cursor = rq->wrr.cursor;
 
-	if (cursor == NULL)
-		return NULL;
-	cursor->wrr.time_slice = cursor->wrr.weight * WRR_TIMESLICE;
-	/* Return the task pointed by the cursor with updated timeslice */
+	if (cursor != NULL)
+		cursor->wrr.time_slice = cursor->wrr.weight * WRR_TIMESLICE;
+
 	return cursor;
 }
 
 static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 {
+	struct wrr_rq *wrr_rq = &rq->wrr;
+	struct task_struct *cursor;
+	struct sched_wrr_entity *wrr_se;
+	struct list_head *next_cursor_list;
+
+	raw_spin_lock(&wrr_rq->wrr_runtime_lock);
+
+	if (rq->wrr.cursor == NULL)
+		goto skip;
+
+	wrr_se = &rq->wrr.cursor->wrr;
+
+	if (--wrr_se->time_slice)
+		goto skip;
+
+	if (wrr_se->run_list.next != wrr_se->run_list.prev) {
+		next_cursor_list = wrr_se->run_list.next;
+		if (next_cursor_list == &wrr_rq->run_queue)
+			next_cursor_list = next_cursor_list->next;
+		wrr_rq->cursor =
+			wrr_task_of(sched_wrr_entity_of(next_cursor_list));
+		set_tsk_need_resched(rq->wrr.cursor);
+	} else
+		wrr_se->time_slice = wrr_se->weight * WRR_TIMESLICE;
+
+skip:
+	raw_spin_unlock(&wrr_rq->wrr_runtime_lock);
 }
 
 static void task_fork_wrr(struct task_struct *p)
@@ -143,7 +153,6 @@ bool yield_to_task_wrr(struct rq *rq, struct task_struct *p, bool preempt)
 static
 void check_preempt_curr_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
-	return;
 }
 
 static void put_prev_task_wrr(struct rq *rq, struct task_struct *p)
