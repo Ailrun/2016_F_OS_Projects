@@ -1036,15 +1036,9 @@ struct sched_entity {
 
 struct sched_wrr_entity {
 	struct list_head run_list;
-	unsigned int weight;
+	unsigned long weight;
 
-	unsigned long timeout;
 	unsigned long time_slice;
-
-	struct sched_wrr_entity *back;
-	struct sched_wrr_entity *parent;
-	struct wrr_rq *wrr_rq;
-	struct wrr_rq *my_q;
 };
 
 struct sched_rt_entity {

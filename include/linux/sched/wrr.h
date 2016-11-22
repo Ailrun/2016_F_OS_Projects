@@ -10,5 +10,6 @@
  * default timeslice is 10 msecs (used only for SCHED_WRR tasks).
  */
 #define WRR_TIMESLICE		(10 * HZ / 1000)
+#define WRR_LB_INTERVAL		(2 * HZ)
 
 #endif /* _SCHED_WRR_H */
