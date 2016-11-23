@@ -59,9 +59,31 @@ $ /home/developer/ -NEED TO MODIFY-
 
 ## High-level Design and Implementation
 
+- `sched_wrr_entity`는 Task에 포함되어 있는 structure로 Task마다 weight가 다르고, tick마다 time_slice를 체크하며 run queue를 구성하기 위해 run_list를 포함한다.<br/>
+- `wrr_rq`는 sched_wrr_entity의 entity를 run_queue에 넣기 위해 dummy head를 포함한다. cursor는 현재 running task를 추적하고, wrr_weight_total은 run queue 안에 있는 task weight의 합을 나타낸다. wrr_nr_running 현재 돌고 있는 task의 수를 나타내며 wrr_runtime_lock은 wrr_rq에 lock을 걸기 위한 용도이다.<br/>
+- 기존 core.c의 policy는 rt가 아니면 fair로 설정하게 되어 있었다. Weighted Round Robin 스케줄링의 wrr 설정을 가능하게 만들기 위해 rt가 아니면 wrr policy를 선택하도록 한다.<br/>
+  wrr을 initialize하는 init_wrr_rq 함수를 추가하고,<br/>
+  policy가 wrr이면 weight과 time_slice를 설정하고 wrr의 run_list를 초기화한다.<br/>
+  &rarr; `core.c`<br/>
+- `sched_setweight`은 현재 task의 policy가 wrr일 때 wrr의 weight를 설정한다.<br/>
+- `sched_getweight`은 현재 task의 weight를 return한다.<br/>
+- `init_wrr_rq`는 wrr_rq의 모든 변수를 초기화한다.<br/>
+- `enqueue_task_wrr`은 lock을 걸고 현재 task list tail에 cursor가 가리키는 task를 추가하며 추가되는 task의 weight과 수를 더한 후 lock을 푼다.<br/>
+- `dequeue_task_wrr`은 lock을 걸고 running task list의 앞부분을 delete한다. 그리고 cursor의 head를 다음 cursor의 head로 변경한다. 이후 삭제한 task의 weight과 수를 뺀 후 lock을 푼다.<br/>
+- `pick_next_task_wrr`은 현재 wrr의 cursor를 불러와 time_slice를 weight * WRR_TIMESLICE(defined)로 정의한다.<br/>
+- `task_tick_wrr`은 lock을 걸고 매 tick마다 time_slice를 줄인 후 lock을 푼다. 이때 run_list.next와 run_list.prev가 같지 않으면 cursor를 재정의한다.<br/>
+- `task_fork_wrr`은 wrr의 weight과 time_slice를 부모 task의 값으로 재설정하며,<br/>
+- `switched_to_wrr`은 wrr의 weight과 time_slice를 기본값으로 설정한다.<br/>
+- `get_rr_interval_wrr`은 wrr의 weight과 정의된 WRR_TIMESLICE의 곱을 return한다.<br/>
+- `find_lowest_rq`는 cpu마다 돌면서 wrr_weight_total이 lowest_weight보다 작고 available cpu를 찾는다.<br/>
+- `select_task_rq_wrr`은 현재 task의 cpu의 rq를 찾아 lowest rq를 찾아 target을 정하고 그 target을 return한다.<br/>
+<br/>
+
+- cpu를 고르게 할당하기 위해 load balancing을 한다. 현재 cpu의 rq의 wrr_weight_total이 min_weight보다 작으면 현재 rq를 min_rq로 assign하며 반대의 경우 max_rq로 assign한다. min_rq와 max_rq가 같으면 return 한다. 같지 않을 경우엔 min_rq와 max_rq에 lock을 걸고 migratable하고 min_weight+wrr_se->weight < max_weight-wrr_se->weight의 조건을 만족하면 현재 task를 move_p로 assign한다. 그 후 move_p가 load에 contribute하는지 체크하고 max_rq를 task queue에 dequeue한다. 그 후 min_rq의 cpu를 현재 cpu로 설정하며 마찬가지로 move_p가 load에 contribute하는지 체크하고 min_rq를 task queue에 enqueue한다. &rarr; `load_balance_wrr`<br/>
 
 ## Lessons Learned
-
+- Linux Scheduling 방식을 조사해보는 기회가 되었다.
+- 직접 구현해봄으로써 Linux Schedule의 구조와 작동 원리에 대해 깊게 공부하였다.
 
 ## Investigate
 
