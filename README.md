@@ -1,11 +1,12 @@
 # OS SNU 16 - Proj3
+
 > Team Member 강수람 / 김희연 / 장준영 (Junyoung Clare Jang)
 
 ## How to Build/Run
 
-1. How to Compile Kernel
+- How to Compile Kernel
 
-```c
+```
 $ cd <this kernel path>
 $ export PATH="$PATH:<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin/"
 $ ./build.sh tizen_tm1 USR
@@ -14,9 +15,8 @@ $ export CROSS_COMPILE="<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7
 $ scripts/mkmodimg.sh
 $ tar cf IMAGE.tar -C arch/arm/boot dzImage -C ../../../usr/tmp-mod modules.img
 ```
-<br/>
 
-2. How to Compile Test Program
+- How to Compile Test Program
 
 ```
 $ cd <this kernel path>/test
@@ -40,7 +40,7 @@ TOOLBASEDIR=/home/user/download<br/>
 $ make
 ```
 
-3. How to Run Test Program
+- How to Run Test Program
 
 Tizen을 다운로드 모드로 변경하고 Linux PC와 연결한다.
 
