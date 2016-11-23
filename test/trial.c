@@ -6,27 +6,28 @@
 
 int main(int argc, char* argv[])
 {
-	int i, t, weight;
+	int i, number, weight;
 	pid_t id = 0;
 	clock_t start, end;
 
 	if (argc != 3) {
-		printf("Need two arguments");
+		printf("Enter number and weight.");
 		return -1;
 	}
 
-	t = atoi(argv[1]);
+	number = atoi(argv[1]);
 	weight = atoi(argv[2]);
 
-	printf("set weight: %d\n", syscall(SCHED_SETWEIGHT, id, weight));
+	printf("set weight(success:0): %d\n", 
+				syscall(SCHED_SETWEIGHT, id, weight));
 
 	start = clock();
-	if (t == 1) printf("1\n");
-	while(t != 1){
-		for(i = 2; i <= t; i++){
-			if(t % i == 0){
+	if (number == 1) printf("1\n");
+	while(number != 1){
+		for(i = 2; i <= number; i++){
+			if(number % i == 0){
 				printf("%d ",i);
-				t = t / i;
+				number = number / i;
 				break;
 			}
 		}
@@ -34,5 +35,6 @@ int main(int argc, char* argv[])
 	printf("\n");
 	end = clock();
 	printf("execution time: %.7f\n", (double)(end-start)/1000);
+
 	return 0;
 }
