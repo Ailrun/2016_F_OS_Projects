@@ -1740,7 +1740,7 @@ void sched_fork(struct task_struct *p)
 	 * Revert to default priority/policy on fork if requested.
 	 */
 	if (unlikely(p->sched_reset_on_fork)) {
-		if (p->policy != SCHED_WRR && task_has_rt_policy(p)) {
+		if (task_has_rt_policy(p)) {
 			p->policy = SCHED_NORMAL;
 			p->static_prio = NICE_TO_PRIO(0);
 			p->rt_priority = 0;
@@ -2728,6 +2728,95 @@ unlock:
 
 #endif
 
+static int is_migratable(struct rq *rq, struct task_struct *p, int dest_cpu)
+{
+	if (rq->curr == p ||
+	    !cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+		return 0;
+
+	return 1;
+}
+
+DEFINE_SPINLOCK(wrr_balance_time_lock);
+unsigned long wrr_balance_time;
+
+static void load_balance_wrr(struct rq *rq)
+{
+	struct rq *min_rq = rq, *max_rq = rq, *temp_rq;
+	unsigned int max_weight = rq->wrr.wrr_weight_total;
+	unsigned int min_weight = rq->wrr.wrr_weight_total;
+
+	int cpu;
+
+	struct sched_wrr_entity *wrr_se, *temp_wrr_se;
+
+	struct task_struct *move_p, *temp_p;
+	unsigned int move_weight;
+
+	unsigned long now;
+
+	spin_lock(&wrr_balance_time_lock);
+
+	now = jiffies;
+	if (time_before(now, wrr_balance_time + WRR_LB_INTERVAL))
+		goto skip_time_unlock;
+	wrr_balance_time = now;
+
+	spin_unlock(&wrr_balance_time_lock);
+
+	/* find min_rq and max_rq */
+	rcu_read_lock();
+	for_each_online_cpu(cpu) {
+		temp_rq = cpu_rq(cpu);
+
+		if (temp_rq->wrr.wrr_weight_total < min_weight) {
+			min_rq = temp_rq;
+			min_weight = temp_rq->wrr.wrr_weight_total;
+		}
+		if (temp_rq->wrr.wrr_weight_total > max_weight) {
+			max_rq = temp_rq;
+			max_weight = temp_rq->wrr.wrr_weight_total;
+		}
+	}
+	rcu_read_unlock();
+
+	if (min_rq == max_rq)
+		goto skip;
+
+	move_p = NULL;
+	move_weight = 0;
+
+	double_rq_lock(max_rq, min_rq);
+	list_for_each_entry_safe(wrr_se, temp_wrr_se,
+				 &max_rq->wrr.run_queue, run_list) {
+		temp_p = container_of(wrr_se, struct task_struct, wrr);
+
+		/* Check rqs and process that are valid for migration */
+		if (is_migratable(max_rq, temp_p, min_rq->cpu) &&
+		    wrr_se->weight > move_weight &&
+		    min_weight + wrr_se->weight < max_weight - wrr_se->weight) {
+			move_p = temp_p;
+			move_weight = wrr_se->weight;
+		}
+	}
+
+	if (move_p == NULL)
+		goto skip_rq_unlock;
+
+	deactivate_task(max_rq, move_p, 0);
+	set_task_cpu(move_p, min_rq->cpu);
+	activate_task(min_rq, move_p, 0);
+
+skip_rq_unlock:
+	double_rq_unlock(max_rq, min_rq);
+skip:
+	return;
+
+skip_time_unlock:
+	spin_unlock(&wrr_balance_time_lock);
+	return;
+}
+
 DEFINE_PER_CPU(struct kernel_stat, kstat);
 DEFINE_PER_CPU(struct kernel_cpustat, kernel_cpustat);
 
@@ -2808,6 +2897,7 @@ void scheduler_tick(void)
 #ifdef CONFIG_SMP
 	rq->idle_balance = idle_cpu(cpu);
 	trigger_load_balance(rq, cpu);
+	load_balance_wrr(rq);
 #endif
 	rq_last_tick_reset(rq);
 }
