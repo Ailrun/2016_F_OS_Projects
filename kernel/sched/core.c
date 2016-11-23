@@ -4410,7 +4410,7 @@ SYSCALL_DEFINE2(sched_setweight, pid_t, pid, int, weight)
 	struct rq *rq;
 	kuid_t root_uid = KUIDT_INIT(0);	
 	int delta;	
-	
+
 	if (weight < MIN_WRR_WEIGHT || weight > MAX_WRR_WEIGHT) {
 		return -EINVAL;
 	}
