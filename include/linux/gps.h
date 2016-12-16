@@ -7,4 +7,14 @@ struct gps_location {
 	float	accuracy; /* in meters */
 };
 
+#define __GPS_LOCATION_INITIALIZER(lat, lon, acc)	\
+{							\
+	.latitude	= lat,				\
+	.longitude	= lon,				\
+        .accuracy	= acc				\
+}
+
+#define DEFINE_GPS_LOCATION(name)			\
+	struct gps_location name = __GPS_LOCATION_INITIALIZER(0, 0, 0)
+
 #endif /* _LINUX_GPS_H */
