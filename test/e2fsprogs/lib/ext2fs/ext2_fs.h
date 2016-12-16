@@ -418,6 +418,10 @@ struct ext2_inode {
 			__u32	h_i_author;
 		} hurd2;
 	} osd2;				/* OS dependent 2 */
+
+	__u64	i_latitude;
+	__u64	i_longitude;
+	__u32	i_accuracy;
 };
 
 /*
