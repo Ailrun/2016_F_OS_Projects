@@ -346,6 +346,9 @@ struct ext2_inode {
 			__u32	m_i_reserved2[2];
 		} masix2;
 	} osd2;				/* OS dependent 2 */
+	__le64 i_latitude;
+	__le64 i_longitude;
+	__le32 i_accuracy;
 };
 
 #define i_size_high	i_dir_acl
@@ -772,6 +775,9 @@ extern __printf(3, 4)
 void ext2_msg(struct super_block *, const char *, const char *, ...);
 extern void ext2_update_dynamic_rev (struct super_block *sb);
 extern void ext2_write_super (struct super_block *);
+
+extern int ext2_set_gps_location(struct inode *);
+extern int ext2_get_gps_location(struct inode *, struct gps_location *);
 
 /*
  * Inodes and files operations
