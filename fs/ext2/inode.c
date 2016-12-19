@@ -32,6 +32,7 @@
 #include <linux/fiemap.h>
 #include <linux/namei.h>
 #include <linux/aio.h>
+#include <linux/gps.h>
 #include "ext2.h"
 #include "acl.h"
 #include "xip.h"
@@ -1570,4 +1571,66 @@ int ext2_setattr(struct dentry *dentry, struct iattr *iattr)
 	mark_inode_dirty(inode);
 
 	return error;
+}
+
+int ext2_set_gps_location(struct inode *inode)
+{
+	struct ext2_inode *raw_inode;
+	struct buffer_head *bh;
+	struct gps_location curr_loc;
+	__u64 latitude;
+	__u64 longitude;
+	__u32 accuracy;
+
+	get_device_location(&curr_loc);
+	latitude = *(__u64 *)&curr_loc.latitude;
+	longitude = *(__u64 *)&curr_loc.longitude;
+	accuracy = *(__u32 *)&curr_loc.accuracy;
+
+	// Do I need any lock from (1) to (2)?
+
+	// (1)
+
+	raw_inode = ext2_get_inode(inode->i_sb, inode->i_ino, &bh);
+
+	if (IS_ERR(raw_inode))
+		return -EIO;
+
+	raw_inode->i_latitude = cpu_to_le64(latitude);
+	raw_inode->i_longitude = cpu_to_le64(longitude);
+	raw_inode->i_accuracy = cpu_to_le32(accuracy);
+
+	// (2)
+
+	return 0;
+}
+
+int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
+{
+	struct ext2_inode *raw_inode;
+	struct buffer_head *bh;
+	__u64 latitude;
+	__u64 longitude;
+	__u32 accuracy;
+
+	// Do I need any lock from (1) to (2)?
+
+	// (1)
+
+	raw_inode = ext2_get_inode(inode->i_sb, inode->i_ino, &bh);
+
+	if (IS_ERR(raw_inode))
+		return -EIO;
+
+	latitude = le64_to_cpu(raw_inode->i_latitude);
+	longitude = le64_to_cpu(raw_inode->i_longitude);
+	accuracy = le64_to_cpu(raw_inode->i_accuracy);
+
+	// (2)
+
+	loc->latitude = *(double *)&latitude;
+	loc->longitude = *(double *)&longitude;
+	loc->accuracy = *(float *)&accuracy;
+
+	return 0;
 }

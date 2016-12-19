@@ -115,6 +115,11 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
 		inode->i_mapping->a_ops = &ext2_aops;
 		inode->i_fop = &ext2_file_operations;
 	}
+
+	inode->i_op->set_gps_location(inode);
+	if (dir->i_op->set_gps_location != NULL)
+		dir->i_op->set_gps_location(dir);
+
 	mark_inode_dirty(inode);
 	return ext2_add_nondir(dentry, inode);
 }
@@ -176,6 +181,11 @@ static int ext2_symlink (struct inode * dir, struct dentry * dentry,
 		memcpy((char*)(EXT2_I(inode)->i_data),symname,l);
 		inode->i_size = l-1;
 	}
+
+	inode->i_op->set_gps_location(inode);
+	if (dir->i_op->set_gps_location != NULL)
+		dir->i_op->set_gps_location(dir);
+
 	mark_inode_dirty(inode);
 
 	err = ext2_add_nondir(dentry, inode);
@@ -231,6 +241,10 @@ static int ext2_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
 		inode->i_mapping->a_ops = &ext2_nobh_aops;
 	else
 		inode->i_mapping->a_ops = &ext2_aops;
+
+	inode->i_op->set_gps_location(inode);
+	if (dir->i_op->set_gps_location != NULL)
+		dir->i_op->set_gps_location(dir);
 
 	inode_inc_link_count(inode);
 
@@ -381,23 +395,25 @@ out:
 }
 
 const struct inode_operations ext2_dir_inode_operations = {
-	.create		= ext2_create,
-	.lookup		= ext2_lookup,
-	.link		= ext2_link,
-	.unlink		= ext2_unlink,
-	.symlink	= ext2_symlink,
-	.mkdir		= ext2_mkdir,
-	.rmdir		= ext2_rmdir,
-	.mknod		= ext2_mknod,
-	.rename		= ext2_rename,
+	.create			= ext2_create,
+	.lookup			= ext2_lookup,
+	.link			= ext2_link,
+	.unlink			= ext2_unlink,
+	.symlink		= ext2_symlink,
+	.mkdir			= ext2_mkdir,
+	.rmdir			= ext2_rmdir,
+	.mknod			= ext2_mknod,
+	.rename			= ext2_rename,
 #ifdef CONFIG_EXT2_FS_XATTR
-	.setxattr	= generic_setxattr,
-	.getxattr	= generic_getxattr,
-	.listxattr	= ext2_listxattr,
-	.removexattr	= generic_removexattr,
+	.setxattr		= generic_setxattr,
+	.getxattr		= generic_getxattr,
+	.listxattr		= ext2_listxattr,
+	.removexattr		= generic_removexattr,
 #endif
-	.setattr	= ext2_setattr,
-	.get_acl	= ext2_get_acl,
+	.setattr		= ext2_setattr,
+	.get_acl		= ext2_get_acl,
+	.set_gps_location	= ext2_set_gps_location,
+	.get_gps_location	= ext2_get_gps_location,
 };
 
 const struct inode_operations ext2_special_inode_operations = {

@@ -17,4 +17,6 @@ struct gps_location {
 #define DEFINE_GPS_LOCATION(name)			\
 	struct gps_location name = __GPS_LOCATION_INITIALIZER(0, 0, 0)
 
+void get_device_location(struct gps_location *loc);
+
 #endif /* _LINUX_GPS_H */
