@@ -1,4 +1,4 @@
-TEST_PROGS=gpsupdate
+TEST_PROGS=gpsupdate file_loc
 
 include Misc.mk
 
