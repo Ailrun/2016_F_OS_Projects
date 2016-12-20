@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include "file_loc.h"
 
 int main(int argc, char **argv)
@@ -9,7 +10,7 @@ int main(int argc, char **argv)
 	int result;
 
 	if(argc != 2) {
-	        printf("Give me a path!");
+	        printf("Give me a path!\n");
 	        exit(-1);
 	}
 
@@ -19,7 +20,7 @@ int main(int argc, char **argv)
 	result = get_gps_location(path, loc);
 
 	if(result) {
-		printf("Error getting GPS\n");
+		printf("Error getting GPS: %s\n", strerror(errno));
 		exit(-1);
 	}
 
@@ -30,5 +31,4 @@ int main(int argc, char **argv)
 
 	free(loc);
 	return 0;
-
 }

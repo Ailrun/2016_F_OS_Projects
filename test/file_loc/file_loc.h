@@ -1,5 +1,5 @@
-#ifndef FILE_LOC_H
-#define FILE_LOC_H
+#ifndef _FILE_LOC_H
+#define _FILE_LOC_H
 
 #include <linux/gps.h>
 #include <sys/syscall.h>
