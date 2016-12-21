@@ -47,13 +47,11 @@ SYSCALL_DEFINE2(get_gps_location, const char __user *, pathname,
 	errchk = inode->i_op->get_gps_location(inode, &nloc);
 	path_put(&path);
 	
-	if(errchk)
-	{
-		if(copy_to_user(loc, &nloc, sizeof(struct gps_location)))
-			return -EFAULT;
-		return errchk;
-	}
-	else return -1;
+	if(copy_to_user(loc, &nloc, sizeof(struct gps_location)))
+		return -EFAULT;
+		
+	return errchk;
+	
 }
 
 void get_device_location(struct gps_location *loc)
