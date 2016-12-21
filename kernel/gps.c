@@ -41,17 +41,18 @@ SYSCALL_DEFINE2(get_gps_location, const char __user *, pathname,
 
 	inode = path.dentry->d_inode;
 
-	if(!inode->i_op->get_gps_location || inode->i_mode)
+	if(!inode->i_op->get_gps_location)
 		return -ENODEV;
 
 	errchk = inode->i_op->get_gps_location(inode, &nloc);
 	path_put(&path);
-
-	if(copy_to_user(loc, &nloc, sizeof(struct gps_location)))
-		return -EFAULT;
 	
 	if(errchk)
+	{
+		if(copy_to_user(loc, &nloc, sizeof(struct gps_location)))
+			return -EFAULT;
 		return errchk;
+	}
 	else return -1;
 }
 
