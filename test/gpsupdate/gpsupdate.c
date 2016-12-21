@@ -57,5 +57,5 @@ int gps_rr(void)
 
 	loc_ind = (loc_ind + 1) % LOC_LEN;
 
-	return set_gps_location(loc_list[loc_ind]);
+	return set_gps_location(&loc_list[loc_ind]);
 }
