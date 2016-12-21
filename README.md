@@ -10,9 +10,23 @@
 
 - How to Compile Kernel
 
-- How to Compile Test Program
+```
+$ cd <this kernel path>
+$ export PATH="$PATH:<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin/"
+$ ./build.sh tizen_tm1 USR
+$ sudo ls
+$ export CROSS_COMPILE="<extraction path>/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin/armv7l-tizen-linux-gnueabi-"
+$ scripts/mkmodimg.sh
+$ tar cf IMAGE.tar -C arch/arm/boot dzImage -C ../../../usr/tmp-mod modules.img
+```
 
-- How to Run Test Program
+- How to Run Program
+
+Tizen을 다운로드 모드로 변경하고 Linux PC와 연결한다.
+
+```
+$ sudo lthor IMAGE.tar
+```
 
 ## High-level Design and Implementation
 
